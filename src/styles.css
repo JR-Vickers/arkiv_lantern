@@ -52,6 +52,12 @@ a {
 .app-shell {
   min-height: 100vh;
   padding: 28px;
+  background-size:
+    160% 160%,
+    180% 180%,
+    170% 170%,
+    100% 100%;
+  animation: auroraDrift 28s ease-in-out infinite;
   background:
     radial-gradient(circle at 10% 15%, rgba(0, 223, 154, 0.25), transparent 38%),
     radial-gradient(circle at 90% 10%, rgba(70, 167, 255, 0.23), transparent 35%),
@@ -142,10 +148,19 @@ p {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 750;
+  transform: translateY(0);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .wallet-button,
 .primary-action {
+  position: relative;
+  overflow: hidden;
   padding: 0 18px;
   color: #f5fffd;
   background: linear-gradient(135deg, #00afcb, #00df9a);
@@ -155,6 +170,25 @@ p {
 .wallet-button:hover,
 .primary-action:hover {
   background: linear-gradient(135deg, #24ceff, #1effb3);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(0, 223, 154, 0.36);
+}
+
+.wallet-button::after,
+.primary-action::after {
+  position: absolute;
+  top: 0;
+  left: -160%;
+  width: 62%;
+  height: 100%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+  content: "";
+}
+
+.wallet-button:hover::after,
+.primary-action:hover::after {
+  animation: ctaShimmer 900ms ease-out;
 }
 
 .secondary-action,
@@ -208,6 +242,8 @@ textarea:disabled {
   border-radius: 8px;
   background: rgba(14, 25, 43, 0.85);
   backdrop-filter: blur(6px);
+  animation: revealUp 520ms ease both;
+  animation-delay: 140ms;
 }
 
 .workflow-panel {
@@ -224,6 +260,8 @@ textarea:disabled {
   border-radius: 8px;
   background: linear-gradient(160deg, rgba(12, 26, 47, 0.9), rgba(18, 34, 53, 0.85));
   box-shadow: 0 14px 50px rgba(3, 10, 23, 0.45);
+  animation: revealUp 520ms ease both;
+  animation-delay: 80ms;
 }
 
 .workflow-intro p:last-child {
@@ -351,6 +389,23 @@ textarea:disabled {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 14px 34px rgba(4, 10, 20, 0.4);
+  animation: revealUp 540ms ease both;
+}
+
+.workflow-stack > .panel:nth-child(1) {
+  animation-delay: 200ms;
+}
+
+.workflow-stack > .panel:nth-child(2) {
+  animation-delay: 260ms;
+}
+
+.workflow-stack > .panel:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+.workflow-stack > .panel:nth-child(4) {
+  animation-delay: 380ms;
 }
 
 #step-1,
@@ -889,5 +944,49 @@ pre {
   .workflow-intro-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@keyframes auroraDrift {
+  0% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      40% 100%,
+      0% 0%;
+  }
+  50% {
+    background-position:
+      12% 14%,
+      88% 8%,
+      55% 86%,
+      0% 0%;
+  }
+  100% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      40% 100%,
+      0% 0%;
+  }
+}
+
+@keyframes ctaShimmer {
+  0% {
+    left: -160%;
+  }
+  100% {
+    left: 170%;
+  }
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
