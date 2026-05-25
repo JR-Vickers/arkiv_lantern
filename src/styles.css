@@ -759,7 +759,7 @@ dd {
 
 .privacy-state.open {
   border-color: var(--warning-border);
-  color: #513d05;
+  color: #ffdca0;
   background: var(--warning-bg);
 }
 
