@@ -10,7 +10,6 @@ import {
   type ArkivEntityDraft,
   type MemoryProfilePayload,
   buildMemoryRecordQuery,
-  buildProfileQuery,
 } from "./lib/arkiv/contract";
 import {
   MemoryProfileValidationError,
@@ -69,6 +68,7 @@ type RecordDetailState =
   | { status: "error"; message: string; record: null };
 
 type ActiveInspector = "profile" | "record" | null;
+type MemoryCaptureMethod = "typed-manually" | "chat" | "docs-web" | "imported" | "other";
 
 type DiagnosticsState =
   | { status: "idle"; message: string; result: null }
@@ -99,10 +99,12 @@ const emptyMemoryForm: MemoryRecordFormInput = {
   encryptionPassphrase: "",
   importance: "medium",
   publicTestnetAcknowledged: false,
-  source: "",
+  source: "typed-manually",
   tags: "",
   title: "",
 };
+
+const OTHER_CAPTURE_METHOD = "other" as const;
 
 export function App({
   createProfileRepository = createBrowserMemoryProfileRepository,
@@ -179,6 +181,8 @@ export function App({
   const [profileInspectorMode, setProfileInspectorMode] = useState<"detail" | "edit">("detail");
   const [profileForm, setProfileForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
   const [memoryForm, setMemoryForm] = useState<MemoryRecordFormInput>(emptyMemoryForm);
+  const [memoryCaptureMethod, setMemoryCaptureMethod] = useState<MemoryCaptureMethod>("typed-manually");
+  const [memoryCaptureOther, setMemoryCaptureOther] = useState("");
   const [profileEditForm, setProfileEditForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
   const [recordEditForm, setRecordEditForm] = useState<MemoryRecordFormInput>(emptyMemoryForm);
   const [profileFormErrors, setProfileFormErrors] = useState<MemoryProfileFieldErrors>({});
@@ -203,7 +207,6 @@ export function App({
   }, [createRecordRepository, wallet]);
 
   const ownerAddress = wallet.address ?? "0x0000000000000000000000000000000000000000";
-  const profileQuery = buildProfileQuery({ ownerAddress });
   const selectedProfile = profiles.find((profile) => profile.entityKey === selectedProfileKey) ?? null;
   const selectedRecord = records.find((record) => record.entityKey === selectedRecordKey) ?? null;
   const recordQuery = selectedProfileKey
@@ -239,7 +242,7 @@ export function App({
               : "current",
     },
     {
-      label: "Save memory",
+      label: "Capture memory",
       detail: selectedProfile ? "Write or encrypt." : "Choose a profile first.",
       status: selectedRecord || records.length > 0 ? "complete" : selectedProfile ? "current" : "locked",
     },
@@ -606,6 +609,8 @@ export function App({
         profileEntityKey: selectedProfileKey,
       });
       setMemoryForm(emptyMemoryForm);
+      setMemoryCaptureMethod("typed-manually");
+      setMemoryCaptureOther("");
       setSelectedRecordKey(result.entityKey);
       setRecordCreate({
         status: "success",
@@ -1131,61 +1136,80 @@ export function App({
                 <p className="empty-state">No profile yet. Create one above, then use it to save memories.</p>
             )}
 
-            <details className="query-details advanced-details">
-              <summary>Profile query</summary>
-              <code>{profileQuery}</code>
-            </details>
           </section>
 
           <section className="panel" id="step-3" aria-labelledby="memory-form-title">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Step 3</p>
-                <h2 id="memory-form-title">Save a memory</h2>
+                <h2 id="memory-form-title">Capture a memory</h2>
                 <p className="panel-copy">Store one note on Arkiv Braga.</p>
               </div>
               <code className="owner-pill">{shortenHex(ownerAddress)}</code>
             </div>
 
             <form className="profile-form" onSubmit={createRecord}>
-              <label className="required-label" htmlFor="selectedProfile">
-                Profile
-              </label>
-              <select
-                id="selectedProfile"
-                value={selectedProfileKey}
-                disabled={wallet.status !== "connected" || profiles.length === 0}
-                aria-describedby={memoryFormErrors.profileEntityKey ? "profileEntityKey-error" : undefined}
-                onChange={(event) => setSelectedProfileKey(event.target.value)}
-              >
-                <option value="">Select a profile</option>
-                {profiles.map((profile) => (
-                  <option key={profile.entityKey} value={profile.entityKey}>
-                    {profile.payload.displayName}
-                  </option>
-                ))}
-              </select>
-              {memoryFormErrors.profileEntityKey && (
-                <p className="field-error" id="profileEntityKey-error">
-                  {memoryFormErrors.profileEntityKey}
-                </p>
-              )}
+              <div className="memory-metadata-grid">
+                <div>
+                  <label className="required-label" htmlFor="selectedProfile">
+                    Profile
+                  </label>
+                  <select
+                    id="selectedProfile"
+                    value={selectedProfileKey}
+                    disabled={wallet.status !== "connected" || profiles.length === 0}
+                    aria-describedby={memoryFormErrors.profileEntityKey ? "profileEntityKey-error" : undefined}
+                    onChange={(event) => setSelectedProfileKey(event.target.value)}
+                  >
+                    <option value="">Select a profile</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.entityKey} value={profile.entityKey}>
+                        {profile.payload.displayName}
+                      </option>
+                    ))}
+                  </select>
+                  {memoryFormErrors.profileEntityKey && (
+                    <p className="field-error" id="profileEntityKey-error">
+                      {memoryFormErrors.profileEntityKey}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="required-label" htmlFor="memoryTitle">
+                    Title
+                  </label>
+                  <input
+                    id="memoryTitle"
+                    name="memoryTitle"
+                    value={memoryForm.title}
+                    disabled={!selectedProfileKey || recordCreate.status === "submitting"}
+                    aria-describedby={memoryFormErrors.title ? "memoryTitle-error" : undefined}
+                    onChange={(event) => setMemoryForm({ ...memoryForm, title: event.target.value })}
+                  />
+                  {memoryFormErrors.title && (
+                    <p className="field-error" id="memoryTitle-error">
+                      {memoryFormErrors.title}
+                    </p>
+                  )}
+                </div>
+              </div>
               {selectedProfile && <p className="selected-profile">Selected profile key: {selectedProfile.entityKey}</p>}
 
-              <label className="required-label" htmlFor="memoryTitle">
-                Title
+              <label className="required-label" htmlFor="memoryBody">
+                Body
               </label>
-              <input
-                id="memoryTitle"
-                name="memoryTitle"
-                value={memoryForm.title}
+              <textarea
+                id="memoryBody"
+                name="memoryBody"
+                rows={6}
+                value={memoryForm.body}
                 disabled={!selectedProfileKey || recordCreate.status === "submitting"}
-                aria-describedby={memoryFormErrors.title ? "memoryTitle-error" : undefined}
-                onChange={(event) => setMemoryForm({ ...memoryForm, title: event.target.value })}
+                aria-describedby={memoryFormErrors.body ? "memoryBody-error" : undefined}
+                onChange={(event) => setMemoryForm({ ...memoryForm, body: event.target.value })}
               />
-              {memoryFormErrors.title && (
-                <p className="field-error" id="memoryTitle-error">
-                  {memoryFormErrors.title}
+              {memoryFormErrors.body && (
+                <p className="field-error" id="memoryBody-error">
+                  {memoryFormErrors.body}
                 </p>
               )}
 
@@ -1212,25 +1236,7 @@ export function App({
                   : "The body will be written as plaintext JSON on Braga testnet. Use demo-safe content only."}
               </p>
 
-              <label className="required-label" htmlFor="memoryBody">
-                Body
-              </label>
-              <textarea
-                id="memoryBody"
-                name="memoryBody"
-                rows={6}
-                value={memoryForm.body}
-                disabled={!selectedProfileKey || recordCreate.status === "submitting"}
-                aria-describedby={memoryFormErrors.body ? "memoryBody-error" : undefined}
-                onChange={(event) => setMemoryForm({ ...memoryForm, body: event.target.value })}
-              />
-              {memoryFormErrors.body && (
-                <p className="field-error" id="memoryBody-error">
-                  {memoryFormErrors.body}
-                </p>
-              )}
-
-              {memoryForm.encryptionEnabled ? (
+              {memoryForm.encryptionEnabled && (
                 <>
                   <label className="required-label" htmlFor="memoryEncryptionPassphrase">
                     Encryption passphrase
@@ -1253,68 +1259,95 @@ export function App({
                     </p>
                   )}
                 </>
-              ) : (
-                <section className="notice memory-warning" aria-label="Memory body public testnet warning">
-                  Memory bodies are written as plaintext JSON. Use non-sensitive demo content only.
-                </section>
               )}
 
-              <label htmlFor="memoryTags">Tags</label>
-              <input
-                id="memoryTags"
-                name="memoryTags"
-                value={memoryForm.tags}
-                placeholder="preference, research"
+              <label htmlFor="memorySourceMethod">How was this captured?</label>
+              <select
+                id="memorySourceMethod"
+                value={memoryCaptureMethod}
                 disabled={!selectedProfileKey || recordCreate.status === "submitting"}
-                aria-describedby={memoryFormErrors.tags ? "memoryTags-error" : undefined}
-                onChange={(event) => setMemoryForm({ ...memoryForm, tags: event.target.value })}
-              />
-              {memoryFormErrors.tags && (
-                <p className="field-error" id="memoryTags-error">
-                  {memoryFormErrors.tags}
-                </p>
+                aria-describedby="memorySource-help"
+                onChange={(event) => {
+                  const method = event.target.value as MemoryCaptureMethod;
+                  setMemoryCaptureMethod(method);
+                  setMemoryForm({ ...memoryForm, source: buildMemorySourceValue(method, memoryCaptureOther) });
+                }}
+              >
+                <option value="typed-manually">Typed manually</option>
+                <option value="chat">Copied from chat</option>
+                <option value="docs-web">From docs/web</option>
+                <option value="imported">Imported</option>
+                <option value="other">Other</option>
+              </select>
+              <p className="panel-copy" id="memorySource-help">Used for filtering and context later.</p>
+              {memoryCaptureMethod === OTHER_CAPTURE_METHOD && (
+                <>
+                  <label htmlFor="memorySourceOther">Describe source</label>
+                  <input
+                    id="memorySourceOther"
+                    name="memorySourceOther"
+                    value={memoryCaptureOther}
+                    placeholder="meeting notes, call transcript, etc."
+                    disabled={!selectedProfileKey || recordCreate.status === "submitting"}
+                    aria-describedby={memoryFormErrors.source ? "memorySource-error" : undefined}
+                    onChange={(event) => {
+                      const nextOther = event.target.value;
+                      setMemoryCaptureOther(nextOther);
+                      setMemoryForm({ ...memoryForm, source: buildMemorySourceValue(memoryCaptureMethod, nextOther) });
+                    }}
+                  />
+                </>
               )}
-
-              <label htmlFor="memorySource">Source</label>
-              <input
-                id="memorySource"
-                name="memorySource"
-                value={memoryForm.source}
-                placeholder="manual"
-                disabled={!selectedProfileKey || recordCreate.status === "submitting"}
-                aria-describedby={memoryFormErrors.source ? "memorySource-error" : undefined}
-                onChange={(event) => setMemoryForm({ ...memoryForm, source: event.target.value })}
-              />
               {memoryFormErrors.source && (
                 <p className="field-error" id="memorySource-error">
                   {memoryFormErrors.source}
                 </p>
               )}
-
-              <label className="required-label" htmlFor="memoryImportance">
-                Importance
-              </label>
-              <select
-                id="memoryImportance"
-                value={memoryForm.importance}
-                disabled={!selectedProfileKey || recordCreate.status === "submitting"}
-                aria-describedby={memoryFormErrors.importance ? "memoryImportance-error" : undefined}
-                onChange={(event) =>
-                  setMemoryForm({
-                    ...memoryForm,
-                    importance: event.target.value as MemoryRecordFormInput["importance"],
-                  })
-                }
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-              {memoryFormErrors.importance && (
-                <p className="field-error" id="memoryImportance-error">
-                  {memoryFormErrors.importance}
-                </p>
-              )}
+              <div className="memory-metadata-grid">
+                <div>
+                  <label className="required-label" htmlFor="memoryImportance">
+                    Importance
+                  </label>
+                  <select
+                    id="memoryImportance"
+                    value={memoryForm.importance}
+                    disabled={!selectedProfileKey || recordCreate.status === "submitting"}
+                    aria-describedby={memoryFormErrors.importance ? "memoryImportance-error" : undefined}
+                    onChange={(event) =>
+                      setMemoryForm({
+                        ...memoryForm,
+                        importance: event.target.value as MemoryRecordFormInput["importance"],
+                      })
+                    }
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                  {memoryFormErrors.importance && (
+                    <p className="field-error" id="memoryImportance-error">
+                      {memoryFormErrors.importance}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="memoryTags">Tags</label>
+                  <input
+                    id="memoryTags"
+                    name="memoryTags"
+                    value={memoryForm.tags}
+                    placeholder="preference, research"
+                    disabled={!selectedProfileKey || recordCreate.status === "submitting"}
+                    aria-describedby={memoryFormErrors.tags ? "memoryTags-error" : undefined}
+                    onChange={(event) => setMemoryForm({ ...memoryForm, tags: event.target.value })}
+                  />
+                  {memoryFormErrors.tags && (
+                    <p className="field-error" id="memoryTags-error">
+                      {memoryFormErrors.tags}
+                    </p>
+                  )}
+                </div>
+              </div>
 
               {!memoryForm.encryptionEnabled && (
                 <>
@@ -1346,7 +1379,7 @@ export function App({
                 type="submit"
                 disabled={!selectedProfileKey || recordCreate.status === "submitting"}
               >
-                {recordCreate.status === "submitting" ? "Submitting memory" : "Create memory"}
+                {recordCreate.status === "submitting" ? "Submitting memory" : "Save memory"}
               </button>
 
               <p className={`operation-message ${recordCreate.status}`} role="status">
@@ -2188,3 +2221,6 @@ function shortenHex(value: string): string {
 
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
+  function buildMemorySourceValue(method: MemoryCaptureMethod, otherText: string): string {
+    return method === OTHER_CAPTURE_METHOD ? otherText.trim() : method;
+  }

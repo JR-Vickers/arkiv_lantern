@@ -42,14 +42,14 @@ describe("App profile workflow", () => {
     expect(screen.queryByRole("heading", { name: "A four-step Arkiv memory flow" })).not.toBeInTheDocument();
     expect(screen.getByText(/Connect with Metamask to scope Arkiv profiles/i)).toBeInTheDocument();
     expect(screen.getByText("Create or select profile")).toBeInTheDocument();
-    expect(screen.getByText("Save memory")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Capture a memory" })).toBeInTheDocument();
     expect(screen.getByText("Retrieve and manage")).toBeInTheDocument();
     expect(screen.getByText("Arkiv contract, diagnostics, and network details")).toBeInTheDocument();
     expect(screen.queryByText("Profile tools")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Memory detail" })).not.toBeInTheDocument();
     expect(screen.getAllByText(/arkiv-database-owned-memory-v1/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Create profile" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Create memory" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save memory" })).toBeDisabled();
   });
 
   it("connects a wallet and shows profile and memory empty states", async () => {
@@ -68,7 +68,7 @@ describe("App profile workflow", () => {
     expect(await screen.findByText("No memory profiles returned for this owner.")).toBeInTheDocument();
     expect(screen.getByText("No profile yet. Create one above, then use it to save memories.")).toBeInTheDocument();
     expect(screen.getByText("Select a profile before retrieving memories.")).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(`ownerAddress = "${ownerAddress}"`))).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(`ownerAddress = "${ownerAddress}"`))).not.toBeInTheDocument();
     expect(profileRepository.listProfiles).toHaveBeenCalledWith({ ownerAddress });
     expect(recordRepository.listRecords).not.toHaveBeenCalled();
   });
@@ -421,7 +421,7 @@ describe("App memory record workflow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory records returned for selected profile.");
 
-    fireEvent.click(screen.getByRole("button", { name: "Create memory" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
 
     expect(await screen.findByText("Title is required.")).toBeInTheDocument();
     expect(screen.getByText("Body is required.")).toBeInTheDocument();
@@ -461,9 +461,9 @@ describe("App memory record workflow", () => {
       target: { value: "The user prefers concise implementation notes." },
     });
     fireEvent.change(screen.getByLabelText("Tags"), { target: { value: "Preference, Research" } });
-    fireEvent.change(screen.getByLabelText("Source"), { target: { value: "manual" } });
+    fireEvent.change(screen.getByLabelText("How was this captured?"), { target: { value: "typed-manually" } });
     fireEvent.click(screen.getByLabelText(/I understand this memory body may be public/i));
-    fireEvent.click(screen.getByRole("button", { name: "Create memory" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
 
     expect(await screen.findByText("Memory record transaction confirmed on Arkiv Braga.")).toBeInTheDocument();
     expect(screen.getByText("Memory record entity loaded by key.")).toBeInTheDocument();
@@ -477,7 +477,7 @@ describe("App memory record workflow", () => {
       ownerAddress,
       profileEntityKey,
       publicTestnetAcknowledged: true,
-      source: "manual",
+      source: "typed-manually",
       tags: "Preference, Research",
       title: "Style preference",
     });
@@ -503,7 +503,7 @@ describe("App memory record workflow", () => {
     fireEvent.change(screen.getByLabelText("Body"), {
       target: { value: "The user prefers private implementation notes." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Create memory" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
 
     expect(await screen.findByText("Passphrase is required to encrypt this memory body.")).toBeInTheDocument();
     expect(screen.getByText("Fix the memory fields before submitting.")).toBeInTheDocument();
@@ -560,7 +560,7 @@ describe("App memory record workflow", () => {
       target: { value: "memory passphrase" },
     });
     fireEvent.change(screen.getByLabelText("Tags"), { target: { value: "Preference, Private" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create memory" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
 
     expect(await screen.findByText("Encrypted memory record transaction confirmed on Arkiv Braga.")).toBeInTheDocument();
     expect(screen.getByText("Memory record entity loaded by key.")).toBeInTheDocument();
@@ -573,7 +573,7 @@ describe("App memory record workflow", () => {
       ownerAddress,
       profileEntityKey,
       publicTestnetAcknowledged: false,
-      source: "",
+      source: "typed-manually",
       tags: "Preference, Private",
       title: "Encrypted style preference",
     });

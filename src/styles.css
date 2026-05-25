@@ -554,6 +554,17 @@ pre {
   margin-top: 18px;
 }
 
+.memory-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.memory-metadata-grid > div {
+  display: grid;
+  gap: 8px;
+}
+
 label,
 dt {
   color: var(--muted);
@@ -976,6 +987,7 @@ pre {
   .diagnostic-meta,
   .diagnostic-check,
   .filter-controls,
+  .memory-metadata-grid,
   .row-actions,
   .details-summary {
     display: grid;
