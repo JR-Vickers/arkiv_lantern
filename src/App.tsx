@@ -179,6 +179,7 @@ export function App({
   });
   const [activeInspector, setActiveInspector] = useState<ActiveInspector>(null);
   const [profileInspectorMode, setProfileInspectorMode] = useState<"detail" | "edit">("detail");
+  const [recordInspectorMode, setRecordInspectorMode] = useState<"detail" | "edit">("detail");
   const [profileForm, setProfileForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
   const [memoryForm, setMemoryForm] = useState<MemoryRecordFormInput>(emptyMemoryForm);
   const [memoryCaptureMethod, setMemoryCaptureMethod] = useState<MemoryCaptureMethod>("typed-manually");
@@ -774,6 +775,7 @@ export function App({
       setRecordUpdate(successState);
       await refreshRecords();
       await inspectRecord(selectedRecord.entityKey);
+      setRecordInspectorMode("edit");
       setRecordUpdate(successState);
     } catch (error) {
       if (error instanceof MemoryRecordValidationError) {
@@ -867,6 +869,7 @@ export function App({
     }
 
     setSelectedRecordKey(entityKey);
+    setRecordInspectorMode("detail");
     setActiveInspector("record");
     setRecordDetail({ status: "loading", message: "Reading memory_record entity by key.", record: null });
 
@@ -884,6 +887,22 @@ export function App({
     } catch (error) {
       setRecordDetail({ status: "error", message: getErrorMessage(error), record: null });
     }
+  }
+
+  function openRecordEditor(record: MemoryRecord) {
+    setSelectedRecordKey(record.entityKey);
+    setRecordEditForm({
+      body: isEncryptedMemoryRecord(record) ? "" : (record.payload.body ?? ""),
+      encryptionEnabled: isEncryptedMemoryRecord(record),
+      encryptionPassphrase: "",
+      importance: record.payload.importance,
+      publicTestnetAcknowledged: false,
+      source: record.payload.source ?? "",
+      tags: record.payload.tags.join(", "),
+      title: record.payload.title,
+    });
+    setRecordEditErrors({});
+    setRecordInspectorMode("edit");
   }
 
   async function decryptSelectedRecordBody() {
@@ -964,6 +983,11 @@ export function App({
     wallet.status === "connected" &&
     profileInspectorEntity !== null &&
     isEntityOwnedBy(profileInspectorEntity, wallet.address);
+  const recordInspectorEntity = recordDetail.record;
+  const canEditRecordInInspector =
+    wallet.status === "connected" &&
+    recordInspectorEntity !== null &&
+    isEntityOwnedBy(recordInspectorEntity, wallet.address);
 
   function scrollToElementById(id: string) {
     const target = document.getElementById(id);
@@ -1469,225 +1493,6 @@ export function App({
             </details>
           </section>
 
-          <details className="panel supporting-panel tool-panel">
-            <summary className="details-summary">
-              <div>
-                <p className="eyebrow">Memory tools</p>
-                <h2 id="record-edit-title">Selected memory</h2>
-                <p className="panel-copy">Update or delete the selected memory.</p>
-              </div>
-              <code className="owner-pill">{selectedRecord ? shortenHex(selectedRecord.entityKey) : "No record"}</code>
-            </summary>
-
-            {selectedRecord ? (
-              <form className="profile-form" onSubmit={updateSelectedRecord}>
-                <p className="selected-profile">Profile relationship: {selectedRecord.payload.profileEntityKey}</p>
-                <p className="selected-profile">Arkiv $owner: {selectedRecord.ownerAddress ?? "Not returned"}</p>
-
-                <label className="required-label" htmlFor="editMemoryTitle">
-                  Record title
-                </label>
-                <input
-                  id="editMemoryTitle"
-                  name="editMemoryTitle"
-                  value={recordEditForm.title}
-                  disabled={recordUpdate.status === "submitting"}
-                  aria-describedby={recordEditErrors.title ? "editMemoryTitle-error" : undefined}
-                  onChange={(event) => setRecordEditForm({ ...recordEditForm, title: event.target.value })}
-                />
-                {recordEditErrors.title && (
-                  <p className="field-error" id="editMemoryTitle-error">
-                    {recordEditErrors.title}
-                  </p>
-                )}
-
-                {isEncryptedMemoryRecord(selectedRecord) && (
-                  <section className="notice encrypted-warning" aria-label="Encrypted memory update warning">
-                    Encrypted body is locked in this edit form. Enter a replacement body and passphrase to update it.
-                  </section>
-                )}
-
-                <label className="checkbox-row" htmlFor="editMemoryEncryptionEnabled">
-                  <input
-                    id="editMemoryEncryptionEnabled"
-                    type="checkbox"
-                    checked={Boolean(recordEditForm.encryptionEnabled)}
-                    disabled={recordUpdate.status === "submitting"}
-                    onChange={(event) =>
-                      setRecordEditForm({
-                        ...recordEditForm,
-                        encryptionEnabled: event.target.checked,
-                        encryptionPassphrase: "",
-                        publicTestnetAcknowledged: event.target.checked ? false : recordEditForm.publicTestnetAcknowledged,
-                      })
-                    }
-                  />
-                  <span>Encrypt updated memory body with a passphrase</span>
-                </label>
-                <p className={`privacy-state ${recordEditForm.encryptionEnabled ? "locked" : "open"}`}>
-                  {recordEditForm.encryptionEnabled
-                    ? "Encryption enabled. Body will be encrypted; title, tags, source, and importance remain searchable metadata."
-                    : "Encryption disabled. Updated body will be written as plaintext JSON on Braga testnet."}
-                </p>
-
-                <label className="required-label" htmlFor="editMemoryBody">
-                  Record body
-                </label>
-                <textarea
-                  id="editMemoryBody"
-                  name="editMemoryBody"
-                  rows={6}
-                  value={recordEditForm.body}
-                  disabled={recordUpdate.status === "submitting"}
-                  aria-describedby={recordEditErrors.body ? "editMemoryBody-error" : undefined}
-                  onChange={(event) => setRecordEditForm({ ...recordEditForm, body: event.target.value })}
-                />
-                {recordEditErrors.body && (
-                  <p className="field-error" id="editMemoryBody-error">
-                    {recordEditErrors.body}
-                  </p>
-                )}
-
-                {recordEditForm.encryptionEnabled ? (
-                  <>
-                    <label className="required-label" htmlFor="editMemoryEncryptionPassphrase">
-                      Update encryption passphrase
-                    </label>
-                    <input
-                      id="editMemoryEncryptionPassphrase"
-                      name="editMemoryEncryptionPassphrase"
-                      type="password"
-                      autoComplete="off"
-                      value={recordEditForm.encryptionPassphrase ?? ""}
-                      disabled={recordUpdate.status === "submitting"}
-                      aria-describedby={
-                        recordEditErrors.encryptionPassphrase ? "editMemoryEncryptionPassphrase-error" : undefined
-                      }
-                      onChange={(event) =>
-                        setRecordEditForm({ ...recordEditForm, encryptionPassphrase: event.target.value })
-                      }
-                    />
-                    {recordEditErrors.encryptionPassphrase && (
-                      <p className="field-error" id="editMemoryEncryptionPassphrase-error">
-                        {recordEditErrors.encryptionPassphrase}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <section className="notice memory-warning" aria-label="Memory update public testnet warning">
-                    Updating replaces the plaintext JSON payload on Braga testnet. Use non-sensitive demo content only.
-                  </section>
-                )}
-
-                <label htmlFor="editMemoryTags">Record tags</label>
-                <input
-                  id="editMemoryTags"
-                  name="editMemoryTags"
-                  value={recordEditForm.tags}
-                  disabled={recordUpdate.status === "submitting"}
-                  aria-describedby={recordEditErrors.tags ? "editMemoryTags-error" : undefined}
-                  onChange={(event) => setRecordEditForm({ ...recordEditForm, tags: event.target.value })}
-                />
-                {recordEditErrors.tags && (
-                  <p className="field-error" id="editMemoryTags-error">
-                    {recordEditErrors.tags}
-                  </p>
-                )}
-
-                <label htmlFor="editMemorySource">Record source</label>
-                <input
-                  id="editMemorySource"
-                  name="editMemorySource"
-                  value={recordEditForm.source}
-                  disabled={recordUpdate.status === "submitting"}
-                  aria-describedby={recordEditErrors.source ? "editMemorySource-error" : undefined}
-                  onChange={(event) => setRecordEditForm({ ...recordEditForm, source: event.target.value })}
-                />
-                {recordEditErrors.source && (
-                  <p className="field-error" id="editMemorySource-error">
-                    {recordEditErrors.source}
-                  </p>
-                )}
-
-                <label className="required-label" htmlFor="editMemoryImportance">
-                  Record importance
-                </label>
-                <select
-                  id="editMemoryImportance"
-                  value={recordEditForm.importance}
-                  disabled={recordUpdate.status === "submitting"}
-                  aria-describedby={recordEditErrors.importance ? "editMemoryImportance-error" : undefined}
-                  onChange={(event) =>
-                    setRecordEditForm({
-                      ...recordEditForm,
-                      importance: event.target.value as MemoryRecordFormInput["importance"],
-                    })
-                  }
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-                {recordEditErrors.importance && (
-                  <p className="field-error" id="editMemoryImportance-error">
-                    {recordEditErrors.importance}
-                  </p>
-                )}
-
-                {!recordEditForm.encryptionEnabled && (
-                  <>
-                    <label className="checkbox-row required-label" htmlFor="editPublicTestnetAcknowledged">
-                      <input
-                        id="editPublicTestnetAcknowledged"
-                        type="checkbox"
-                        checked={recordEditForm.publicTestnetAcknowledged}
-                        disabled={recordUpdate.status === "submitting"}
-                        aria-describedby={
-                          recordEditErrors.publicTestnetAcknowledged ? "editPublicTestnetAcknowledged-error" : undefined
-                        }
-                        onChange={(event) =>
-                          setRecordEditForm({ ...recordEditForm, publicTestnetAcknowledged: event.target.checked })
-                        }
-                      />
-                      <span>I understand this updated memory body may be public on Braga testnet.</span>
-                    </label>
-                    {recordEditErrors.publicTestnetAcknowledged && (
-                      <p className="field-error" id="editPublicTestnetAcknowledged-error">
-                        {recordEditErrors.publicTestnetAcknowledged}
-                      </p>
-                    )}
-                  </>
-                )}
-
-                <div className="mutation-actions">
-                  <button className="primary-action" type="submit" disabled={recordUpdate.status === "submitting"}>
-                    {recordUpdate.status === "submitting" ? "Updating memory" : "Update memory"}
-                  </button>
-                  <button
-                    className="danger-action"
-                    type="button"
-                    disabled={recordDelete.status === "submitting"}
-                    onClick={() => void deleteSelectedRecord()}
-                  >
-                    {recordDelete.status === "submitting" ? "Deleting memory" : "Delete memory"}
-                  </button>
-                </div>
-
-                <p className={`operation-message ${recordUpdate.status}`} role="status">
-                  {recordUpdate.message}
-                </p>
-                {recordUpdate.status === "success" && <ReceiptGrid entityKey={recordUpdate.entityKey} txHash={recordUpdate.txHash} />}
-              </form>
-            ) : (
-              <p className="empty-state">Select a memory record to load editable fields.</p>
-            )}
-
-            <p className={`operation-message ${recordDelete.status}`} role="status">
-              {recordDelete.message}
-            </p>
-            {recordDelete.status === "success" && <ReceiptGrid entityKey={recordDelete.entityKey} txHash={recordDelete.txHash} />}
-          </details>
-
           <details className="panel advanced-panel network-panel">
             <summary>
               <span>
@@ -1751,6 +1556,22 @@ export function App({
         {activeInspector === "record" && (
           <EntityDetailPopover
             explorerUrl={BRAGA_EXPLORER_URL}
+            headerActions={
+              recordInspectorEntity ? (
+                <button
+                  className="secondary-action"
+                  type="button"
+                  disabled={!canEditRecordInInspector || recordUpdate.status === "submitting"}
+                  onClick={() =>
+                    recordInspectorMode === "edit"
+                      ? setRecordInspectorMode("detail")
+                      : openRecordEditor(recordInspectorEntity)
+                  }
+                >
+                  {recordInspectorMode === "edit" ? "Memory detail" : "Edit memory"}
+                </button>
+              ) : null
+            }
             heading="Memory detail"
             label="Inspect"
             status={recordDetail.status}
@@ -1758,7 +1579,25 @@ export function App({
             entity={recordDetail.record}
             onClose={() => setActiveInspector(null)}
             extraContent={
-              recordDetail.record && isEncryptedMemoryRecord(recordDetail.record) ? (
+              recordInspectorMode === "edit" && selectedRecord && recordInspectorEntity ? (
+                <RecordEditPanel
+                  form={recordEditForm}
+                  formErrors={recordEditErrors}
+                  onDelete={() => void deleteSelectedRecord()}
+                  onFormChange={setRecordEditForm}
+                  onSubmit={updateSelectedRecord}
+                  record={selectedRecord}
+                  recordDelete={recordDelete}
+                  recordUpdate={recordUpdate}
+                />
+              ) : recordDelete.status === "success" ? (
+                <>
+                  <p className={`operation-message ${recordDelete.status}`} role="status">
+                    {recordDelete.message}
+                  </p>
+                  <ReceiptGrid entityKey={recordDelete.entityKey} txHash={recordDelete.txHash} />
+                </>
+              ) : recordDetail.record && isEncryptedMemoryRecord(recordDetail.record) ? (
                 <RecordDecryptPanel
                   decryptState={recordDecrypt}
                   disabled={recordDecrypt.status === "loading"}
@@ -1950,6 +1789,232 @@ function ProfileEditPanel({
         {profileDelete.message}
       </p>
       {profileDelete.status === "success" && <ReceiptGrid entityKey={profileDelete.entityKey} txHash={profileDelete.txHash} />}
+    </section>
+  );
+}
+
+interface RecordEditPanelProps {
+  form: MemoryRecordFormInput;
+  formErrors: MemoryRecordFieldErrors;
+  onDelete: () => void;
+  onFormChange: (form: MemoryRecordFormInput) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  record: MemoryRecord;
+  recordDelete: CreateState;
+  recordUpdate: CreateState;
+}
+
+function RecordEditPanel({
+  form,
+  formErrors,
+  onDelete,
+  onFormChange,
+  onSubmit,
+  record,
+  recordDelete,
+  recordUpdate,
+}: RecordEditPanelProps) {
+  return (
+    <section className="inspector-edit-panel" aria-label="Edit selected memory">
+      <div>
+        <p className="eyebrow">Memory tools</p>
+        <h3>Edit memory</h3>
+        <p className="selected-profile">Profile relationship: {record.payload.profileEntityKey}</p>
+        <p className="selected-profile">Arkiv $owner: {record.ownerAddress ?? "Not returned"}</p>
+      </div>
+
+      <form className="profile-form" onSubmit={onSubmit}>
+        <label className="required-label" htmlFor="editMemoryTitle">
+          Record title
+        </label>
+        <input
+          id="editMemoryTitle"
+          name="editMemoryTitle"
+          value={form.title}
+          disabled={recordUpdate.status === "submitting"}
+          aria-describedby={formErrors.title ? "editMemoryTitle-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, title: event.target.value })}
+        />
+        {formErrors.title && (
+          <p className="field-error" id="editMemoryTitle-error">
+            {formErrors.title}
+          </p>
+        )}
+
+        {isEncryptedMemoryRecord(record) && (
+          <section className="notice encrypted-warning" aria-label="Encrypted memory update warning">
+            Encrypted body is locked in this edit form. Enter a replacement body and passphrase to update it.
+          </section>
+        )}
+
+        <label className="checkbox-row" htmlFor="editMemoryEncryptionEnabled">
+          <input
+            id="editMemoryEncryptionEnabled"
+            type="checkbox"
+            checked={Boolean(form.encryptionEnabled)}
+            disabled={recordUpdate.status === "submitting"}
+            onChange={(event) =>
+              onFormChange({
+                ...form,
+                encryptionEnabled: event.target.checked,
+                encryptionPassphrase: "",
+                publicTestnetAcknowledged: event.target.checked ? false : form.publicTestnetAcknowledged,
+              })
+            }
+          />
+          <span>Encrypt updated memory body with a passphrase</span>
+        </label>
+        <p className={`privacy-state ${form.encryptionEnabled ? "locked" : "open"}`}>
+          {form.encryptionEnabled
+            ? "Encryption enabled. Body will be encrypted; title, tags, source, and importance remain searchable metadata."
+            : "Encryption disabled. Updated body will be written as plaintext JSON on Braga testnet."}
+        </p>
+
+        <label className="required-label" htmlFor="editMemoryBody">
+          Record body
+        </label>
+        <textarea
+          id="editMemoryBody"
+          name="editMemoryBody"
+          rows={6}
+          value={form.body}
+          disabled={recordUpdate.status === "submitting"}
+          aria-describedby={formErrors.body ? "editMemoryBody-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, body: event.target.value })}
+        />
+        {formErrors.body && (
+          <p className="field-error" id="editMemoryBody-error">
+            {formErrors.body}
+          </p>
+        )}
+
+        {form.encryptionEnabled ? (
+          <>
+            <label className="required-label" htmlFor="editMemoryEncryptionPassphrase">
+              Update encryption passphrase
+            </label>
+            <input
+              id="editMemoryEncryptionPassphrase"
+              name="editMemoryEncryptionPassphrase"
+              type="password"
+              autoComplete="off"
+              value={form.encryptionPassphrase ?? ""}
+              disabled={recordUpdate.status === "submitting"}
+              aria-describedby={formErrors.encryptionPassphrase ? "editMemoryEncryptionPassphrase-error" : undefined}
+              onChange={(event) => onFormChange({ ...form, encryptionPassphrase: event.target.value })}
+            />
+            {formErrors.encryptionPassphrase && (
+              <p className="field-error" id="editMemoryEncryptionPassphrase-error">
+                {formErrors.encryptionPassphrase}
+              </p>
+            )}
+          </>
+        ) : (
+          <section className="notice memory-warning" aria-label="Memory update public testnet warning">
+            Updating replaces the plaintext JSON payload on Braga testnet. Use non-sensitive demo content only.
+          </section>
+        )}
+
+        <label htmlFor="editMemoryTags">Record tags</label>
+        <input
+          id="editMemoryTags"
+          name="editMemoryTags"
+          value={form.tags}
+          disabled={recordUpdate.status === "submitting"}
+          aria-describedby={formErrors.tags ? "editMemoryTags-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, tags: event.target.value })}
+        />
+        {formErrors.tags && (
+          <p className="field-error" id="editMemoryTags-error">
+            {formErrors.tags}
+          </p>
+        )}
+
+        <label htmlFor="editMemorySource">Record source</label>
+        <input
+          id="editMemorySource"
+          name="editMemorySource"
+          value={form.source}
+          disabled={recordUpdate.status === "submitting"}
+          aria-describedby={formErrors.source ? "editMemorySource-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, source: event.target.value })}
+        />
+        {formErrors.source && (
+          <p className="field-error" id="editMemorySource-error">
+            {formErrors.source}
+          </p>
+        )}
+
+        <label className="required-label" htmlFor="editMemoryImportance">
+          Record importance
+        </label>
+        <select
+          id="editMemoryImportance"
+          value={form.importance}
+          disabled={recordUpdate.status === "submitting"}
+          aria-describedby={formErrors.importance ? "editMemoryImportance-error" : undefined}
+          onChange={(event) =>
+            onFormChange({
+              ...form,
+              importance: event.target.value as MemoryRecordFormInput["importance"],
+            })
+          }
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        {formErrors.importance && (
+          <p className="field-error" id="editMemoryImportance-error">
+            {formErrors.importance}
+          </p>
+        )}
+
+        {!form.encryptionEnabled && (
+          <>
+            <label className="checkbox-row required-label" htmlFor="editPublicTestnetAcknowledged">
+              <input
+                id="editPublicTestnetAcknowledged"
+                type="checkbox"
+                checked={form.publicTestnetAcknowledged}
+                disabled={recordUpdate.status === "submitting"}
+                aria-describedby={formErrors.publicTestnetAcknowledged ? "editPublicTestnetAcknowledged-error" : undefined}
+                onChange={(event) => onFormChange({ ...form, publicTestnetAcknowledged: event.target.checked })}
+              />
+              <span>I understand this updated memory body may be public on Braga testnet.</span>
+            </label>
+            {formErrors.publicTestnetAcknowledged && (
+              <p className="field-error" id="editPublicTestnetAcknowledged-error">
+                {formErrors.publicTestnetAcknowledged}
+              </p>
+            )}
+          </>
+        )}
+
+        <div className="mutation-actions">
+          <button className="primary-action" type="submit" disabled={recordUpdate.status === "submitting"}>
+            {recordUpdate.status === "submitting" ? "Updating memory" : "Update memory"}
+          </button>
+          <button
+            className="danger-action"
+            type="button"
+            disabled={recordDelete.status === "submitting"}
+            onClick={onDelete}
+          >
+            {recordDelete.status === "submitting" ? "Deleting memory" : "Delete memory"}
+          </button>
+        </div>
+
+        <p className={`operation-message ${recordUpdate.status}`} role="status">
+          {recordUpdate.message}
+        </p>
+        {recordUpdate.status === "success" && <ReceiptGrid entityKey={recordUpdate.entityKey} txHash={recordUpdate.txHash} />}
+      </form>
+
+      <p className={`operation-message ${recordDelete.status}`} role="status">
+        {recordDelete.message}
+      </p>
+      {recordDelete.status === "success" && <ReceiptGrid entityKey={recordDelete.entityKey} txHash={recordDelete.txHash} />}
     </section>
   );
 }

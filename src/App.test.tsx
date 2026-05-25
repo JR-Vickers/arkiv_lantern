@@ -46,6 +46,7 @@ describe("App profile workflow", () => {
     expect(screen.getByText("Retrieve and manage")).toBeInTheDocument();
     expect(screen.getByText("Arkiv contract, diagnostics, and network details")).toBeInTheDocument();
     expect(screen.queryByText("Profile tools")).not.toBeInTheDocument();
+    expect(screen.queryByText("Memory tools")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Memory detail" })).not.toBeInTheDocument();
     expect(screen.getAllByText(/arkiv-database-owned-memory-v1/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Create profile" })).toBeDisabled();
@@ -594,7 +595,6 @@ describe("App memory record workflow", () => {
 
     expect(await screen.findByRole("heading", { name: "Encrypted style preference" })).toBeInTheDocument();
     expect(screen.getAllByText(/Encrypted body locked/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Encrypted memory record selected but locked/i)).toBeInTheDocument();
     expect(screen.queryByText("The user prefers private implementation notes.")).not.toBeInTheDocument();
   });
 
@@ -681,7 +681,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
+    await openRecordInspectorEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Update memory" }));
 
@@ -733,7 +733,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
+    await openRecordInspectorEditor();
 
     fireEvent.change(screen.getByLabelText("Record title"), { target: { value: "Updated style preference" } });
     fireEvent.change(screen.getByLabelText("Record body"), {
@@ -743,7 +743,9 @@ describe("App memory record workflow", () => {
     fireEvent.click(screen.getByLabelText(/I understand this updated memory body may be public/i));
     fireEvent.click(screen.getByRole("button", { name: "Update memory" }));
 
-    expect(await screen.findByText("Memory record update transaction confirmed on Arkiv Braga.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Memory record update transaction confirmed on Arkiv Braga.")).toBeInTheDocument();
+    });
     expect(screen.getByRole("heading", { name: "Updated style preference" })).toBeInTheDocument();
     expect(recordRepository.updateRecord).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -782,7 +784,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
+    await openRecordInspectorEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Delete memory" }));
 
@@ -810,7 +812,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
+    await openRecordInspectorEditor();
     await openProfileInspectorEditor();
 
     fireEvent.change(screen.getByLabelText("Profile display name"), { target: { value: "Retryable profile edit" } });
@@ -819,6 +821,7 @@ describe("App memory record workflow", () => {
     expect(await screen.findByText(/Profile update authorization failed/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue("Retryable profile edit")).toBeInTheDocument();
 
+    await openRecordInspectorEditor();
     fireEvent.click(screen.getByRole("button", { name: "Delete memory" }));
 
     expect(await screen.findByText(/Memory record delete authorization failed/i)).toBeInTheDocument();
@@ -1099,4 +1102,12 @@ async function openProfileInspectorEditor() {
   await screen.findByRole("dialog", { name: "Profile detail" });
   fireEvent.click(screen.getByRole("button", { name: "Edit profile" }));
   await screen.findByRole("heading", { name: "Edit profile" });
+}
+
+async function openRecordInspectorEditor() {
+  await screen.findByRole("heading", { name: "Style preference" });
+  fireEvent.click(within(screen.getByRole("region", { name: "Retrieve memories" })).getByRole("button", { name: "Inspect" }));
+  await screen.findByRole("dialog", { name: "Memory detail" });
+  fireEvent.click(screen.getByRole("button", { name: "Edit memory" }));
+  await screen.findByRole("heading", { name: "Edit memory" });
 }
