@@ -12,7 +12,7 @@ This file is the deterministic source for challenge-submission readiness checks.
 
 ## Repository
 
-- Public GitHub repo: Requires human after repository is published
+- Public GitHub repo: https://github.com/JR-Vickers/arkiv_lantern
 - License: MIT
 - README setup instructions complete: Yes for Phase 7 readiness
 - Local Git remote discovered: No, this workspace is not a Git repository
@@ -51,5 +51,5 @@ This file is the deterministic source for challenge-submission readiness checks.
 - Submitted: Not submitted
 - Submitted by: Requires human
 - Submission date: Requires human
-- Submission URL/status: Requires human after form submission
+- Submission URL/status: Requires human
 - Notes: GitHub Pages support is present, but public repository publication, Pages activation, deployed URL, final team info, prize wallet, and optional/prize demo video link require human completion.

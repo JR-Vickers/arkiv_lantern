@@ -40,6 +40,12 @@ describe("App profile workflow", () => {
     expect(screen.getByRole("heading", { name: "Arkiv Lantern" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Connect MetaMask" })).toBeInTheDocument();
     expect(screen.getByText(/Braga testnet data may be public/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "A four-step Arkiv memory flow" })).toBeInTheDocument();
+    expect(screen.getByText("Connect wallet")).toBeInTheDocument();
+    expect(screen.getByText("Create or select profile")).toBeInTheDocument();
+    expect(screen.getByText("Save memory")).toBeInTheDocument();
+    expect(screen.getByText("Retrieve and manage")).toBeInTheDocument();
+    expect(screen.getByText("Arkiv contract, diagnostics, and network details")).toBeInTheDocument();
     expect(screen.getAllByText(/arkiv-database-owned-memory-v1/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Create profile" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Create memory" })).toBeDisabled();
@@ -59,8 +65,8 @@ describe("App profile workflow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
 
     expect(await screen.findByText("No memory profiles returned for this owner.")).toBeInTheDocument();
-    expect(screen.getByText("No selected profile. Create or query a profile before adding memories.")).toBeInTheDocument();
-    expect(screen.getByText("Select a profile before querying memory records.")).toBeInTheDocument();
+    expect(screen.getByText("No profile yet. Create one above, then use it to save memories.")).toBeInTheDocument();
+    expect(screen.getByText("Select a profile before retrieving memories.")).toBeInTheDocument();
     expect(screen.getByText(new RegExp(`ownerAddress = "${ownerAddress}"`))).toBeInTheDocument();
     expect(profileRepository.listProfiles).toHaveBeenCalledWith({ ownerAddress });
     expect(recordRepository.listRecords).not.toHaveBeenCalled();
@@ -139,6 +145,7 @@ describe("App profile workflow", () => {
 
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Jarrett" } });
     fireEvent.change(screen.getByLabelText("Agent purpose"), { target: { value: "Debug Braga writes" } });
+    openAdvancedPanel();
     fireEvent.click(screen.getByRole("button", { name: "Run write diagnostics" }));
 
     expect(await screen.findByText(/Diagnostics isolate the failure to the MetaMask provider path/i)).toBeInTheDocument();
@@ -174,6 +181,7 @@ describe("App profile workflow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
     await screen.findByText("No memory profiles returned for this owner.");
 
+    openAdvancedPanel();
     fireEvent.click(screen.getByRole("button", { name: "Run write diagnostics" }));
 
     expect(await screen.findByText("Display name is required.")).toBeInTheDocument();
@@ -561,7 +569,7 @@ describe("App memory record workflow", () => {
     await screen.findByRole("heading", { name: "Encrypted style preference" });
 
     fireEvent.click(
-      within(screen.getByRole("region", { name: "Memory records" })).getByRole("button", { name: "Inspect" }),
+      within(screen.getByRole("region", { name: "Retrieve memories" })).getByRole("button", { name: "Inspect" }),
     );
     await screen.findByText("Encrypted memory record loaded but locked. Passphrase required to decrypt the body.");
     fireEvent.change(screen.getByLabelText("Decryption passphrase"), {
@@ -594,7 +602,7 @@ describe("App memory record workflow", () => {
     await screen.findByRole("heading", { name: "Encrypted style preference" });
 
     fireEvent.click(
-      within(screen.getByRole("region", { name: "Memory records" })).getByRole("button", { name: "Inspect" }),
+      within(screen.getByRole("region", { name: "Retrieve memories" })).getByRole("button", { name: "Inspect" }),
     );
     await screen.findByText("Encrypted memory record loaded but locked. Passphrase required to decrypt the body.");
     fireEvent.change(screen.getByLabelText("Decryption passphrase"), {
@@ -812,7 +820,7 @@ describe("App memory record workflow", () => {
     await screen.findByRole("heading", { name: "Style preference" });
 
     fireEvent.click(
-      within(screen.getByRole("region", { name: "Memory records" })).getByRole("button", { name: "Inspect" }),
+      within(screen.getByRole("region", { name: "Retrieve memories" })).getByRole("button", { name: "Inspect" }),
     );
 
     expect(await screen.findByText("Memory record entity loaded by key.")).toBeInTheDocument();
@@ -1031,4 +1039,8 @@ function createEncryptedMemoryRecord(): MemoryRecord {
       updatedAt: now.toISOString(),
     },
   };
+}
+
+function openAdvancedPanel() {
+  fireEvent.click(screen.getByText("Arkiv contract, diagnostics, and network details"));
 }

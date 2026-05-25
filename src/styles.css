@@ -118,6 +118,18 @@ p {
   line-height: 1.55;
 }
 
+.hero-copy {
+  max-width: 680px;
+  margin: 12px 0 0;
+  font-size: 1.05rem;
+}
+
+.panel-copy {
+  max-width: 640px;
+  margin: 7px 0 0;
+  font-size: 0.92rem;
+}
+
 .wallet-button,
 .primary-action,
 .secondary-action,
@@ -193,6 +205,107 @@ textarea:disabled {
   background: rgba(255, 255, 255, 0.8);
 }
 
+.workflow-panel {
+  position: sticky;
+  top: 10px;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.workflow-intro p:last-child {
+  margin-bottom: 0;
+}
+
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: workflow;
+}
+
+.workflow-step {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfd;
+  counter-increment: workflow;
+}
+
+.workflow-step-button {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workflow-step::before {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 9px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--soft);
+  content: counter(workflow);
+  font-weight: 750;
+}
+
+.workflow-step span {
+  display: block;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.workflow-step p {
+  margin: 5px 0 0;
+  font-size: 0.88rem;
+}
+
+.workflow-step-button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.workflow-step.complete {
+  border-color: rgba(22, 116, 93, 0.42);
+  background: #f2faf7;
+}
+
+.workflow-step.complete::before {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.workflow-step.current {
+  border-color: rgba(36, 91, 133, 0.42);
+  background: var(--blue-soft);
+}
+
+.workflow-step.current::before {
+  color: #ffffff;
+  background: var(--blue);
+}
+
+.workflow-step.locked {
+  opacity: 0.72;
+}
+
 .status-strip div {
   min-width: 0;
 }
@@ -213,9 +326,8 @@ textarea:disabled {
   font-size: 0.95rem;
 }
 
-.profile-layout {
+.workflow-stack {
   display: grid;
-  grid-template-columns: minmax(330px, 0.95fr) minmax(0, 1.15fr);
   gap: 16px;
 }
 
@@ -227,20 +339,62 @@ textarea:disabled {
   background: var(--surface);
 }
 
-.form-panel {
-  grid-row: span 2;
+#step-1,
+#step-2,
+#step-3,
+#step-4 {
+  scroll-margin-top: 230px;
 }
 
-.detail-panel {
-  grid-column: span 2;
-}
-
-.network-panel {
-  grid-column: span 2;
+.supporting-panel {
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .diagnostic-panel {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.advanced-panel {
+  padding: 0;
+}
+
+.advanced-panel > summary {
+  display: flex;
+  cursor: pointer;
+  padding: 18px 20px;
+  list-style: none;
+}
+
+.advanced-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-panel > summary::before {
+  margin-right: 10px;
+  color: var(--muted);
+  content: ">";
+  font-weight: 800;
+}
+
+.advanced-panel[open] > summary::before {
+  content: "v";
+}
+
+.advanced-panel > summary strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.advanced-panel > section {
+  margin: 0 20px 20px;
+}
+
+.advanced-panel .status-strip {
+  display: grid;
+  margin: 0 20px 20px;
 }
 
 .owner-pill,
@@ -270,6 +424,16 @@ dt {
   font-size: 0.78rem;
   font-weight: 750;
   text-transform: uppercase;
+}
+
+.required-label::after {
+  margin-left: 4px;
+  color: #b42318;
+  content: "*";
+}
+
+.checkbox-row.required-label::after {
+  margin-left: 0;
 }
 
 input,
@@ -333,7 +497,8 @@ textarea:focus {
 }
 
 .operation-message.loading,
-.operation-message.submitting {
+.operation-message.submitting,
+.operation-message.pending {
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -459,6 +624,10 @@ dd {
 .query-details {
   margin-top: 14px;
   color: var(--muted);
+}
+
+.advanced-details {
+  font-size: 0.92rem;
 }
 
 .query-details summary {
@@ -610,7 +779,9 @@ pre {
 
   .topbar,
   .status-strip,
-  .profile-layout,
+  .workflow-panel,
+  .workflow-steps,
+  .workflow-stack,
   .profile-row,
   .detail-grid,
   .diagnostic-meta,
@@ -619,13 +790,6 @@ pre {
   .row-actions {
     display: grid;
     grid-template-columns: 1fr;
-  }
-
-  .form-panel,
-  .detail-panel,
-  .network-panel {
-    grid-column: auto;
-    grid-row: auto;
   }
 
   .wallet-button,
