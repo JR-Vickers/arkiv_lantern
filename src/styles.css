@@ -224,6 +224,13 @@ textarea:disabled {
   margin-bottom: 0;
 }
 
+.workflow-intro-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .workflow-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -348,6 +355,29 @@ textarea:disabled {
 
 .supporting-panel {
   background: rgba(255, 255, 255, 0.82);
+}
+
+.details-summary {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+
+.details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-summary::before {
+  color: var(--muted);
+  content: ">";
+  font-weight: 800;
+}
+
+details[open] > .details-summary::before {
+  content: "v";
 }
 
 .diagnostic-panel {
@@ -476,6 +506,10 @@ textarea:focus {
 
 .primary-action {
   margin-top: 8px;
+}
+
+.row-actions .primary-action {
+  margin-top: 0;
 }
 
 .operation-message {
@@ -723,6 +757,47 @@ dd {
   text-decoration: none;
 }
 
+.icon-action {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.icon-action:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: #fff8f7;
+}
+
+.inspect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: 92px 18px 18px;
+  background: rgba(23, 32, 29, 0.18);
+}
+
+.inspect-popover {
+  width: min(920px, 100%);
+  max-height: min(760px, calc(100vh - 120px));
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 60px rgba(18, 50, 40, 0.2);
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: minmax(260px, 0.55fr) minmax(0, 1fr);
@@ -787,7 +862,8 @@ pre {
   .diagnostic-meta,
   .diagnostic-check,
   .filter-controls,
-  .row-actions {
+  .row-actions,
+  .details-summary {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -801,5 +877,10 @@ pre {
 
   .panel-heading {
     align-items: start;
+  }
+
+  .workflow-intro-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

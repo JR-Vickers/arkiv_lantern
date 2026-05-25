@@ -20,7 +20,7 @@ This file is the deterministic source for challenge-submission readiness checks.
 
 ## Demo
 
-- Working demo link: Requires human after GitHub Pages is enabled and deployed
+- Working demo link: https://jr-vickers.github.io/arkiv_lantern/
 - Demo video link: Requires human before prize claim
 - Braga test wallet public address: `0x5056A091A9674EB1bDFcE49a689b175Bd69E81A2`
 - Demo shows create/query/update/delete for `memory_profile`: Requires human manual Braga verification on deployed URL
@@ -52,4 +52,4 @@ This file is the deterministic source for challenge-submission readiness checks.
 - Submitted by: Requires human
 - Submission date: Requires human
 - Submission URL/status: Requires human
-- Notes: GitHub Pages support is present, but public repository publication, Pages activation, deployed URL, final team info, prize wallet, and optional/prize demo video link require human completion.
+- Notes: Public repository and GitHub Pages demo URL are now set. Final team info, prize wallet, submission URL/status, and demo video link remain human-owned completion items.

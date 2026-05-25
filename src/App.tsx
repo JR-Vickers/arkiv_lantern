@@ -68,6 +68,8 @@ type RecordDetailState =
   | { status: "success"; message: string; record: MemoryRecord }
   | { status: "error"; message: string; record: null };
 
+type ActiveInspector = "profile" | "record" | null;
+
 type DiagnosticsState =
   | { status: "idle"; message: string; result: null }
   | { status: "loading"; message: string; result: null }
@@ -173,6 +175,7 @@ export function App({
     message: "Open a memory record to inspect payload and Arkiv metadata.",
     record: null,
   });
+  const [activeInspector, setActiveInspector] = useState<ActiveInspector>(null);
   const [profileForm, setProfileForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
   const [memoryForm, setMemoryForm] = useState<MemoryRecordFormInput>(emptyMemoryForm);
   const [profileEditForm, setProfileEditForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
@@ -214,17 +217,17 @@ export function App({
       label: "Connect wallet",
       detail:
         wallet.status === "connected"
-          ? `Writes and personal queries use ${shortenHex(wallet.address)}.`
-          : "Use MetaMask on Arkiv Braga so records belong to your wallet.",
+          ? shortenHex(wallet.address)
+          : "Use MetaMask.",
       status: wallet.status === "connected" ? "complete" : "current",
     },
     {
       label: "Create or select profile",
       detail: selectedProfile
-        ? `${selectedProfile.payload.displayName} is selected.`
+        ? `${selectedProfile.payload.displayName} selected.`
         : profiles.length > 0
-          ? "Select one profile before saving a memory."
-          : "A profile is the container for one agent or use case.",
+          ? "Select one."
+          : "Create a container.",
       status:
         wallet.status !== "connected"
           ? "locked"
@@ -236,14 +239,12 @@ export function App({
     },
     {
       label: "Save memory",
-      detail: selectedProfile
-        ? "Write a plaintext demo memory or encrypt the body with a passphrase."
-        : "Choose a profile first so the memory can be linked on Arkiv.",
+      detail: selectedProfile ? "Write or encrypt." : "Choose a profile first.",
       status: selectedRecord || records.length > 0 ? "complete" : selectedProfile ? "current" : "locked",
     },
     {
       label: "Retrieve and manage",
-      detail: records.length > 0 ? "Open a memory to inspect, decrypt, update, or delete it." : "Query saved memories by profile or tag.",
+      detail: records.length > 0 ? "Open saved memory." : "Query by profile or tag.",
       status: records.length > 0 ? "current" : "locked",
     },
   ] as const;
@@ -826,6 +827,7 @@ export function App({
     }
 
     setSelectedProfileKey(entityKey);
+    setActiveInspector("profile");
     setProfileDetail({ status: "loading", message: "Reading profile entity by key.", profile: null });
 
     try {
@@ -842,6 +844,7 @@ export function App({
     }
 
     setSelectedRecordKey(entityKey);
+    setActiveInspector("record");
     setRecordDetail({ status: "loading", message: "Reading memory_record entity by key.", record: null });
 
     try {
@@ -933,50 +936,44 @@ export function App({
     setAppliedTagFilter("");
   }
 
-  function scrollToStepSection(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  function scrollToElementById(id: string) {
+    const target = document.getElementById(id);
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   return (
     <main className="app-shell">
-      <section className="workspace" aria-labelledby="app-title">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Arkiv Braga testnet</p>
-            <h1 id="app-title">Arkiv Lantern</h1>
-            <p className="hero-copy">
-              Create wallet-owned memory for an AI agent, store it on Arkiv, then retrieve it by profile or tag.
-            </p>
-          </div>
-          <button className="wallet-button" type="button" onClick={connectWallet}>
-            {wallet.status === "connected" ? "Wallet connected" : "Connect MetaMask"}
-          </button>
-        </header>
-
-        <section className="notice" aria-label="Public testnet warning">
-          Braga testnet data may be public. Use encryption for sensitive memory bodies; titles, tags, source, and importance
-          remain searchable metadata.
-        </section>
-
+      <section className="workspace" aria-labelledby="workflow-title">
         <section className="workflow-panel" aria-labelledby="workflow-title">
           <div className="workflow-intro">
-            <p className="eyebrow">Start here</p>
-            <h2 id="workflow-title">A four-step Arkiv memory flow</h2>
-            <p>
-              The app writes two kinds of Arkiv entities: a profile for the agent or use case, and memories linked to
-              that profile. Your connected wallet is the owner for update and delete.
+            <div className="workflow-intro-head">
+              <p className="eyebrow">Arkiv Braga testnet</p>
+              <button className="wallet-button" type="button" onClick={connectWallet}>
+                {wallet.status === "connected" ? "Wallet connected" : "Connect MetaMask"}
+              </button>
+            </div>
+            <h2 id="workflow-title">Arkiv Lantern</h2>
+            <p className="hero-copy">
+              Create wallet-owned memory for an AI agent, store it on Arkiv, then retrieve it by profile or tag.
             </p>
           </div>
           <ol className="workflow-steps">
             {workflowSteps.map((step, index) => (
               <li className={`workflow-step ${step.status}`} key={step.label}>
-                <button className="workflow-step-button" type="button" onClick={() => scrollToStepSection(`step-${index + 1}`)}>
+                <button className="workflow-step-button" type="button" onClick={() => scrollToElementById(`step-${index + 1}`)}>
                   <span>{step.label}</span>
                   <p>{step.detail}</p>
                 </button>
               </li>
             ))}
           </ol>
+        </section>
+
+        <section className="notice" aria-label="Public testnet warning">
+          Braga testnet data may be public. Use encryption for sensitive memory bodies; titles, tags, source, and importance
+          remain searchable metadata.
         </section>
 
         <p className={`operation-message ${wallet.status}`} role="status">
@@ -989,7 +986,7 @@ export function App({
               <div>
                 <p className="eyebrow">Step 1</p>
                 <h2 id="profile-form-title">Create a profile</h2>
-                <p className="panel-copy">Name the agent, assistant, or use case this memory belongs to.</p>
+                <p className="panel-copy">Name the agent or use case.</p>
               </div>
               <code className="owner-pill">{shortenHex(ownerAddress)}</code>
             </div>
@@ -1053,12 +1050,12 @@ export function App({
               >
                 {profileCreate.status === "submitting" ? "Submitting profile" : "Create profile"}
               </button>
-            </form>
 
-            <p className={`operation-message ${profileCreate.status}`} role="status">
-              {profileCreate.message}
-            </p>
-            {profileCreate.status === "success" && <ReceiptGrid entityKey={profileCreate.entityKey} txHash={profileCreate.txHash} />}
+              <p className={`operation-message ${profileCreate.status}`} role="status">
+                {profileCreate.message}
+              </p>
+              {profileCreate.status === "success" && <ReceiptGrid entityKey={profileCreate.entityKey} txHash={profileCreate.txHash} />}
+            </form>
           </section>
 
           <section className="panel" id="step-2" aria-labelledby="profile-list-title">
@@ -1066,7 +1063,7 @@ export function App({
               <div>
                 <p className="eyebrow">Step 2</p>
                 <h2 id="profile-list-title">Choose a profile</h2>
-                <p className="panel-copy">Profiles returned here are scoped to the connected wallet owner.</p>
+                <p className="panel-copy">Wallet-scoped profiles.</p>
               </div>
               <button
                 className="secondary-action"
@@ -1093,7 +1090,7 @@ export function App({
                     </div>
                     <div className="row-actions">
                       <button
-                        className="secondary-action"
+                        className="primary-action"
                         type="button"
                         onClick={() => setSelectedProfileKey(profile.entityKey)}
                       >
@@ -1120,15 +1117,15 @@ export function App({
             </details>
           </section>
 
-          <section className="panel supporting-panel" aria-labelledby="profile-edit-title">
-            <div className="panel-heading">
+          <details className="panel supporting-panel tool-panel">
+            <summary className="details-summary">
               <div>
                 <p className="eyebrow">Profile tools</p>
                 <h2 id="profile-edit-title">Selected profile</h2>
-                <p className="panel-copy">Edit or delete the selected profile when the connected wallet is the Arkiv owner.</p>
+                <p className="panel-copy">Edit or delete the selected profile.</p>
               </div>
               <code className="owner-pill">{selectedProfile ? shortenHex(selectedProfile.entityKey) : "No profile"}</code>
-            </div>
+            </summary>
 
             {selectedProfile ? (
               <form className="profile-form" onSubmit={updateSelectedProfile}>
@@ -1198,28 +1195,28 @@ export function App({
                     {profileDelete.status === "submitting" ? "Deleting profile" : "Delete profile"}
                   </button>
                 </div>
+
+                <p className={`operation-message ${profileUpdate.status}`} role="status">
+                  {profileUpdate.message}
+                </p>
+                {profileUpdate.status === "success" && <ReceiptGrid entityKey={profileUpdate.entityKey} txHash={profileUpdate.txHash} />}
               </form>
             ) : (
               <p className="empty-state">Select a profile to load editable fields.</p>
             )}
 
-            <p className={`operation-message ${profileUpdate.status}`} role="status">
-              {profileUpdate.message}
-            </p>
-            {profileUpdate.status === "success" && <ReceiptGrid entityKey={profileUpdate.entityKey} txHash={profileUpdate.txHash} />}
-
             <p className={`operation-message ${profileDelete.status}`} role="status">
               {profileDelete.message}
             </p>
             {profileDelete.status === "success" && <ReceiptGrid entityKey={profileDelete.entityKey} txHash={profileDelete.txHash} />}
-          </section>
+          </details>
 
           <section className="panel" id="step-3" aria-labelledby="memory-form-title">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Step 3</p>
                 <h2 id="memory-form-title">Save a memory</h2>
-                <p className="panel-copy">A memory is one durable note for the selected profile, stored on Arkiv Braga.</p>
+                <p className="panel-copy">Store one note on Arkiv Braga.</p>
               </div>
               <code className="owner-pill">{shortenHex(ownerAddress)}</code>
             </div>
@@ -1425,12 +1422,12 @@ export function App({
               >
                 {recordCreate.status === "submitting" ? "Submitting memory" : "Create memory"}
               </button>
-            </form>
 
-            <p className={`operation-message ${recordCreate.status}`} role="status">
-              {recordCreate.message}
-            </p>
-            {recordCreate.status === "success" && <ReceiptGrid entityKey={recordCreate.entityKey} txHash={recordCreate.txHash} />}
+              <p className={`operation-message ${recordCreate.status}`} role="status">
+                {recordCreate.message}
+              </p>
+              {recordCreate.status === "success" && <ReceiptGrid entityKey={recordCreate.entityKey} txHash={recordCreate.txHash} />}
+            </form>
           </section>
 
           <section className="panel" id="step-4" aria-labelledby="memory-list-title">
@@ -1438,7 +1435,7 @@ export function App({
               <div>
                 <p className="eyebrow">Step 4</p>
                 <h2 id="memory-list-title">Retrieve memories</h2>
-                <p className="panel-copy">Query by selected profile, then optionally narrow the list with a tag.</p>
+                <p className="panel-copy">Query by profile or tag.</p>
               </div>
               <button
                 className="secondary-action"
@@ -1486,7 +1483,7 @@ export function App({
                     </div>
                     <div className="row-actions">
                       <button
-                        className="secondary-action"
+                        className="primary-action"
                         type="button"
                         onClick={() => setSelectedRecordKey(record.entityKey)}
                       >
@@ -1513,15 +1510,15 @@ export function App({
             </details>
           </section>
 
-          <section className="panel supporting-panel" aria-labelledby="record-edit-title">
-            <div className="panel-heading">
+          <details className="panel supporting-panel tool-panel">
+            <summary className="details-summary">
               <div>
                 <p className="eyebrow">Memory tools</p>
                 <h2 id="record-edit-title">Selected memory</h2>
-                <p className="panel-copy">Update or delete the selected memory when this wallet owns it.</p>
+                <p className="panel-copy">Update or delete the selected memory.</p>
               </div>
               <code className="owner-pill">{selectedRecord ? shortenHex(selectedRecord.entityKey) : "No record"}</code>
-            </div>
+            </summary>
 
             {selectedRecord ? (
               <form className="profile-form" onSubmit={updateSelectedRecord}>
@@ -1716,51 +1713,21 @@ export function App({
                     {recordDelete.status === "submitting" ? "Deleting memory" : "Delete memory"}
                   </button>
                 </div>
+
+                <p className={`operation-message ${recordUpdate.status}`} role="status">
+                  {recordUpdate.message}
+                </p>
+                {recordUpdate.status === "success" && <ReceiptGrid entityKey={recordUpdate.entityKey} txHash={recordUpdate.txHash} />}
               </form>
             ) : (
               <p className="empty-state">Select a memory record to load editable fields.</p>
             )}
 
-            <p className={`operation-message ${recordUpdate.status}`} role="status">
-              {recordUpdate.message}
-            </p>
-            {recordUpdate.status === "success" && <ReceiptGrid entityKey={recordUpdate.entityKey} txHash={recordUpdate.txHash} />}
-
             <p className={`operation-message ${recordDelete.status}`} role="status">
               {recordDelete.message}
             </p>
             {recordDelete.status === "success" && <ReceiptGrid entityKey={recordDelete.entityKey} txHash={recordDelete.txHash} />}
-          </section>
-
-          <EntityDetailPanel
-            explorerUrl={BRAGA_EXPLORER_URL}
-            heading="Memory detail"
-            label="Inspect"
-            status={recordDetail.status}
-            message={recordDetail.message}
-            entity={recordDetail.record}
-            extraContent={
-              recordDetail.record && isEncryptedMemoryRecord(recordDetail.record) ? (
-                <RecordDecryptPanel
-                  decryptState={recordDecrypt}
-                  disabled={recordDecrypt.status === "loading"}
-                  passphrase={recordDecryptPassphrase}
-                  onClear={clearDecryptedRecordBody}
-                  onDecrypt={() => void decryptSelectedRecordBody()}
-                  onPassphraseChange={setRecordDecryptPassphrase}
-                />
-              ) : null
-            }
-          />
-
-          <EntityDetailPanel
-            explorerUrl={BRAGA_EXPLORER_URL}
-            heading="Profile detail"
-            label="Inspect"
-            status={profileDetail.status}
-            message={profileDetail.message}
-            entity={profileDetail.profile}
-          />
+          </details>
 
           <details className="panel advanced-panel network-panel">
             <summary>
@@ -1821,6 +1788,42 @@ export function App({
             </section>
           </details>
         </div>
+
+        {activeInspector === "record" && (
+          <EntityDetailPopover
+            explorerUrl={BRAGA_EXPLORER_URL}
+            heading="Memory detail"
+            label="Inspect"
+            status={recordDetail.status}
+            message={recordDetail.message}
+            entity={recordDetail.record}
+            onClose={() => setActiveInspector(null)}
+            extraContent={
+              recordDetail.record && isEncryptedMemoryRecord(recordDetail.record) ? (
+                <RecordDecryptPanel
+                  decryptState={recordDecrypt}
+                  disabled={recordDecrypt.status === "loading"}
+                  passphrase={recordDecryptPassphrase}
+                  onClear={clearDecryptedRecordBody}
+                  onDecrypt={() => void decryptSelectedRecordBody()}
+                  onPassphraseChange={setRecordDecryptPassphrase}
+                />
+              ) : null
+            }
+          />
+        )}
+
+        {activeInspector === "profile" && (
+          <EntityDetailPopover
+            explorerUrl={BRAGA_EXPLORER_URL}
+            heading="Profile detail"
+            label="Inspect"
+            status={profileDetail.status}
+            message={profileDetail.message}
+            entity={profileDetail.profile}
+            onClose={() => setActiveInspector(null)}
+          />
+        )}
       </section>
     </main>
   );
@@ -1846,62 +1849,85 @@ function ReceiptGrid({ entityKey, txHash }: ReceiptGridProps) {
   );
 }
 
-interface EntityDetailPanelProps {
+interface EntityDetailPopoverProps {
   entity: MemoryProfile | MemoryRecord | null;
   explorerUrl: string;
   extraContent?: ReactNode;
   heading: string;
   label: string;
   message: string;
+  onClose: () => void;
   status: string;
 }
 
-function EntityDetailPanel({ entity, explorerUrl, extraContent, heading, label, message, status }: EntityDetailPanelProps) {
+function EntityDetailPopover({
+  entity,
+  explorerUrl,
+  extraContent,
+  heading,
+  label,
+  message,
+  onClose,
+  status,
+}: EntityDetailPopoverProps) {
   return (
-    <section className="panel detail-panel" aria-labelledby={`${heading.toLowerCase().replace(/\s+/g, "-")}-title`}>
-      <div className="panel-heading">
-        <div>
-          <p className="eyebrow">{label}</p>
-          <h2 id={`${heading.toLowerCase().replace(/\s+/g, "-")}-title`}>{heading}</h2>
+    <div className="inspect-overlay" role="presentation" onClick={onClose}>
+      <section
+        aria-labelledby={`${heading.toLowerCase().replace(/\s+/g, "-")}-title`}
+        aria-modal="true"
+        className="inspect-popover"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">{label}</p>
+            <h2 id={`${heading.toLowerCase().replace(/\s+/g, "-")}-title`}>{heading}</h2>
+          </div>
+          <div className="row-actions">
+            <a className="secondary-link" href={explorerUrl}>
+              Explorer
+            </a>
+            <button className="icon-action" type="button" aria-label="Close inspector" onClick={onClose}>
+              x
+            </button>
+          </div>
         </div>
-        <a className="secondary-link" href={explorerUrl}>
-          Explorer
-        </a>
-      </div>
 
-      <p className={`operation-message ${status}`} role="status">
-        {message}
-      </p>
+        <p className={`operation-message ${status}`} role="status">
+          {message}
+        </p>
 
-      {entity && (
-        <div className="detail-grid">
-          <dl>
-            <div>
-              <dt>Entity key</dt>
-              <dd>{entity.entityKey}</dd>
-            </div>
-            <div>
-              <dt>Owner</dt>
-              <dd>{entity.ownerAddress ?? "Not returned"}</dd>
-            </div>
-            <div>
-              <dt>Creator</dt>
-              <dd>{entity.creatorAddress ?? "Not returned"}</dd>
-            </div>
-            <div>
-              <dt>Created block</dt>
-              <dd>{formatBlock(entity.createdAtBlock)}</dd>
-            </div>
-            <div>
-              <dt>Expires block</dt>
-              <dd>{formatBlock(entity.expiresAtBlock)}</dd>
-            </div>
-          </dl>
-          <pre>{JSON.stringify(entity.payload, null, 2)}</pre>
-        </div>
-      )}
-      {extraContent}
-    </section>
+        {entity && (
+          <div className="detail-grid">
+            <dl>
+              <div>
+                <dt>Entity key</dt>
+                <dd>{entity.entityKey}</dd>
+              </div>
+              <div>
+                <dt>Owner</dt>
+                <dd>{entity.ownerAddress ?? "Not returned"}</dd>
+              </div>
+              <div>
+                <dt>Creator</dt>
+                <dd>{entity.creatorAddress ?? "Not returned"}</dd>
+              </div>
+              <div>
+                <dt>Created block</dt>
+                <dd>{formatBlock(entity.createdAtBlock)}</dd>
+              </div>
+              <div>
+                <dt>Expires block</dt>
+                <dd>{formatBlock(entity.expiresAtBlock)}</dd>
+              </div>
+            </dl>
+            <pre>{JSON.stringify(entity.payload, null, 2)}</pre>
+          </div>
+        )}
+        {extraContent}
+      </section>
+    </div>
   );
 }
 

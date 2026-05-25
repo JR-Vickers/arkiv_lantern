@@ -40,12 +40,14 @@ describe("App profile workflow", () => {
     expect(screen.getByRole("heading", { name: "Arkiv Lantern" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Connect MetaMask" })).toBeInTheDocument();
     expect(screen.getByText(/Braga testnet data may be public/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "A four-step Arkiv memory flow" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "A four-step Arkiv memory flow" })).not.toBeInTheDocument();
     expect(screen.getByText("Connect wallet")).toBeInTheDocument();
     expect(screen.getByText("Create or select profile")).toBeInTheDocument();
     expect(screen.getByText("Save memory")).toBeInTheDocument();
     expect(screen.getByText("Retrieve and manage")).toBeInTheDocument();
     expect(screen.getByText("Arkiv contract, diagnostics, and network details")).toBeInTheDocument();
+    expect(screen.getByText("Selected profile").closest("details")).not.toHaveAttribute("open");
+    expect(screen.queryByRole("dialog", { name: "Memory detail" })).not.toBeInTheDocument();
     expect(screen.getAllByText(/arkiv-database-owned-memory-v1/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Create profile" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Create memory" })).toBeDisabled();
@@ -235,6 +237,51 @@ describe("App profile workflow", () => {
       ownerAddress,
     });
     expect(profileRepository.readProfile).toHaveBeenCalledWith({ entityKey: profileEntityKey });
+  });
+
+  it("opens profile detail when inspecting a profile", async () => {
+    installEthereumProvider();
+    const profile = createProfile();
+    const profileRepository = createProfileRepository([profile]);
+    const recordRepository = createRecordRepository([]);
+    vi.mocked(profileRepository.readProfile).mockResolvedValue(profile);
+
+    render(
+      <App
+        createProfileRepository={() => profileRepository}
+        createRecordRepository={() => recordRepository}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    await screen.findByRole("heading", { name: "Research Agent" });
+
+    fireEvent.click(within(screen.getByRole("region", { name: "Choose a profile" })).getByRole("button", { name: "Inspect" }));
+
+    expect(await screen.findByText("Profile entity loaded by key.")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Profile detail" })).toBeInTheDocument();
+    expect(profileRepository.readProfile).toHaveBeenCalledWith({ entityKey: profileEntityKey });
+  });
+
+  it("closes the inspect popover from the close button", async () => {
+    installEthereumProvider();
+    const profile = createProfile();
+    const profileRepository = createProfileRepository([profile]);
+    const recordRepository = createRecordRepository([]);
+
+    render(
+      <App
+        createProfileRepository={() => profileRepository}
+        createRecordRepository={() => recordRepository}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    await screen.findByRole("heading", { name: "Research Agent" });
+
+    fireEvent.click(within(screen.getByRole("region", { name: "Choose a profile" })).getByRole("button", { name: "Inspect" }));
+    await screen.findByRole("dialog", { name: "Profile detail" });
+    fireEvent.click(screen.getByRole("button", { name: "Close inspector" }));
+
+    expect(screen.queryByRole("dialog", { name: "Profile detail" })).not.toBeInTheDocument();
   });
 
   it("shows profile update validation errors from the repository", async () => {

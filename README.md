@@ -40,6 +40,22 @@ Vite serves the usable app shell at `http://127.0.0.1:5173/` by default. If that
 
 Use a browser profile with MetaMask for live Braga writes. The app requests the Arkiv Braga chain, creates and mutates `memory_profile` and `memory_record` entities through MetaMask, and queries profiles and records by the connected owner address.
 
+## Quick Demo Flow
+
+Use this sequence for a short, deterministic demo pass:
+
+1. Connect MetaMask on Arkiv Braga.
+2. Create one `memory_profile`.
+3. Select that profile.
+4. Create one plaintext `memory_record` with non-sensitive content.
+5. Create one encrypted `memory_record` and keep the demo passphrase.
+6. Query records by profile and tag.
+7. Inspect and decrypt the encrypted record body.
+8. Update one owned profile or record.
+9. Delete one owned profile or record.
+
+Capture tx hashes for each live write and include explorer links in submission notes.
+
 ## MetaMask And Braga
 
 Arkiv Lantern uses the Braga chain definition from `@arkiv-network/sdk` and asks MetaMask to add or refresh the network when the wallet connects.
@@ -118,6 +134,12 @@ For live demo testing:
 5. Update and delete records only when MetaMask shows the connected wallet as the Arkiv `$owner`.
 6. If a write fails before submission with a Brotli/decompression error, run the in-app write diagnostics and refresh the MetaMask Braga RPC entry.
 
+Transaction state interpretation:
+
+- Pending in MetaMask or explorer: treat as pending testnet finality, not app failure.
+- Failed in app should only be treated as final when MetaMask or explorer reports a failed/reverted transaction.
+- If pending extends for a long time, keep the tx hash and continue with read/query/inspect portions of the demo.
+
 ## Deployment
 
 The app builds to static Vite output in `dist/`:
@@ -153,3 +175,10 @@ Public deployment cannot be completed from this local workspace because no Git r
 Challenge readiness metadata lives in `docs/agent/SUBMISSION.md`. Replace every `Requires human` placeholder before final submission with the public repository URL, working demo URL, team info, prize wallet address, submission status, and demo video metadata.
 
 Submit at `https://forms.arkiv.network/ethns-arkiv-challenge` after `./scripts/check.sh` passes and the deployed demo has been manually exercised against Braga.
+
+## Judge Notes
+
+- This project targets Arkiv Braga testnet, which can have high and variable confirmation latency.
+- Deterministic quality gate: `./scripts/check.sh`.
+- Live-write reliability evidence should be provided as tx hashes + explorer links.
+- Security model: wallet ownership controls write authority; memory-body encryption is optional and passphrase-based; passphrases are not recoverable.
