@@ -1,33 +1,5 @@
 # Arkiv Lantern
 
-```text
-                        .     .       .  .   . .   .   . .    +  .
-                  .     .  :     .    .. :. .___---------___.  .
-                       .  .   .    .  :.:. _".^ .^ ^.  '.. :"-_. .
-                    .  :       .  .  .:../:            . .^  :.:\.
-                        .   . :: +. :.:/: .   .    .        . . .:\
-                 .  :    .     . _ :::/:               .  ^ .  . .:\
-                  .. . .   . - : :.:./.                        .  .:\
-                  .      .     . :..|:                    .  .  ^. .:|
-                    .       . : : ..||        ARKIV LANTERN         :|
-                  .     . . . ::. ::\(         user-owned          .:/
-                 .   .     : . : .:.|.\       web3 memory vault    :/
-                  +   .   .   : . ::.\/_                     .   .:/
-                   .         +   .  .:.\.            .         .:/
-                     .      . . .   . ::/  .      .            :/
-                        .      .      .:/______________________/ 
-
-                                                .-.
-                                               (   )
-                                                `-'
-                                                /|\
-                                               / | \
-                                              /  |  \
-                                             '---^---'
-
-                                onchain records + local-key encryption
-```
-
 Arkiv Lantern is an AI-themed Arkiv Braga testnet app for user-owned agent memory. Users create memory profiles and memory records as Arkiv entities controlled by their wallet, not by a platform database.
 
 Current implementation status: Phase 7 challenge-readiness support. The app shell, developer tooling, Arkiv contract guardrails, `memory_profile` create/read/query/update/delete workflow, `memory_record` create/read/query/update/delete workflow, write diagnostics, opt-in encrypted memory body workflow, static build support, and GitHub Pages workflow are in place.
