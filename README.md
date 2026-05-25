@@ -17,13 +17,15 @@
                      .      . . .   . ::/  .      .            :/
                         .      .      .:/______________________/ 
 
-                           .-.
-                          (   )      onchain records + local-key encryption
-                           `-'
-                           /|\
-                          / | \
-                         /  |  \
-                        '---^---'
+                                                .-.
+                                                (   )
+                                                `-'
+                                                /|\
+                                                / | \
+                                              /  |  \
+                                              '---^---'
+
+                                onchain records + local-key encryption
 ```
 
 Arkiv Lantern is an AI-themed Arkiv Braga testnet app for user-owned agent memory. Users create memory profiles and memory records as Arkiv entities controlled by their wallet, not by a platform database.
