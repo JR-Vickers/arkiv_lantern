@@ -37,16 +37,15 @@ describe("App profile workflow", () => {
   it("renders the usable Arkiv memory workspace", () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: "Arkiv Lantern" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Connect MetaMask" })).toBeInTheDocument();
-    expect(screen.getByText(/Braga testnet data may be public/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "[Arkiv Lantern]" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Connect with MetaMask/i })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "A four-step Arkiv memory flow" })).not.toBeInTheDocument();
-    expect(screen.getByText("Connect wallet")).toBeInTheDocument();
+    expect(screen.getByText(/Connect with Metamask to scope Arkiv profiles/i)).toBeInTheDocument();
     expect(screen.getByText("Create or select profile")).toBeInTheDocument();
     expect(screen.getByText("Save memory")).toBeInTheDocument();
     expect(screen.getByText("Retrieve and manage")).toBeInTheDocument();
     expect(screen.getByText("Arkiv contract, diagnostics, and network details")).toBeInTheDocument();
-    expect(screen.getByText("Selected profile").closest("details")).not.toHaveAttribute("open");
+    expect(screen.queryByText("Profile tools")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Memory detail" })).not.toBeInTheDocument();
     expect(screen.getAllByText(/arkiv-database-owned-memory-v1/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Create profile" })).toBeDisabled();
@@ -64,7 +63,7 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
 
     expect(await screen.findByText("No memory profiles returned for this owner.")).toBeInTheDocument();
     expect(screen.getByText("No profile yet. Create one above, then use it to save memories.")).toBeInTheDocument();
@@ -91,7 +90,7 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory profiles returned for this owner.");
 
     fireEvent.click(screen.getByRole("button", { name: "Create profile" }));
@@ -115,7 +114,7 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory profiles returned for this owner.");
 
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Jarrett" } });
@@ -142,7 +141,7 @@ describe("App profile workflow", () => {
         runProfileCreateDiagnostics={runProfileCreateDiagnostics}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory profiles returned for this owner.");
 
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Jarrett" } });
@@ -180,7 +179,7 @@ describe("App profile workflow", () => {
         runProfileCreateDiagnostics={runProfileCreateDiagnostics}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory profiles returned for this owner.");
 
     openAdvancedPanel();
@@ -216,7 +215,7 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory profiles returned for this owner.");
 
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Research Agent" } });
@@ -252,7 +251,7 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByRole("heading", { name: "Research Agent" });
 
     fireEvent.click(within(screen.getByRole("region", { name: "Choose a profile" })).getByRole("button", { name: "Inspect" }));
@@ -274,7 +273,7 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByRole("heading", { name: "Research Agent" });
 
     fireEvent.click(within(screen.getByRole("region", { name: "Choose a profile" })).getByRole("button", { name: "Inspect" }));
@@ -300,8 +299,8 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv profile.");
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await openProfileInspectorEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Update profile" }));
 
@@ -343,8 +342,8 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv profile.");
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await openProfileInspectorEditor();
 
     fireEvent.change(screen.getByLabelText("Profile display name"), { target: { value: "Research Agent Prime" } });
     fireEvent.change(screen.getByLabelText("Profile agent purpose"), {
@@ -352,6 +351,7 @@ describe("App profile workflow", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Update profile" }));
 
+    await waitFor(() => expect(profileRepository.updateProfile).toHaveBeenCalled());
     expect(await screen.findByText("Profile update transaction confirmed on Arkiv Braga.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Research Agent Prime" })).toBeInTheDocument();
     expect(profileRepository.updateProfile).toHaveBeenCalledWith(
@@ -384,8 +384,8 @@ describe("App profile workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
-    await screen.findByText("Edit fields are loaded from the selected Arkiv profile.");
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await openProfileInspectorEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
 
@@ -418,7 +418,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory records returned for selected profile.");
 
     fireEvent.click(screen.getByRole("button", { name: "Create memory" }));
@@ -453,7 +453,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory records returned for selected profile.");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Style preference" } });
@@ -495,7 +495,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory records returned for selected profile.");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Encrypted style preference" } });
@@ -548,7 +548,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory records returned for selected profile.");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Encrypted style preference" } });
@@ -590,7 +590,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
 
     expect(await screen.findByRole("heading", { name: "Encrypted style preference" })).toBeInTheDocument();
     expect(screen.getAllByText(/Encrypted body locked/i).length).toBeGreaterThan(0);
@@ -612,7 +612,7 @@ describe("App memory record workflow", () => {
         decryptRecordBody={decryptRecordBody}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByRole("heading", { name: "Encrypted style preference" });
 
     fireEvent.click(
@@ -645,7 +645,7 @@ describe("App memory record workflow", () => {
         decryptRecordBody={decryptRecordBody}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByRole("heading", { name: "Encrypted style preference" });
 
     fireEvent.click(
@@ -680,7 +680,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
 
     fireEvent.click(screen.getByRole("button", { name: "Update memory" }));
@@ -732,7 +732,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
 
     fireEvent.change(screen.getByLabelText("Record title"), { target: { value: "Updated style preference" } });
@@ -781,7 +781,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
 
     fireEvent.click(screen.getByRole("button", { name: "Delete memory" }));
@@ -809,8 +809,9 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("Edit fields are loaded from the selected Arkiv memory record.");
+    await openProfileInspectorEditor();
 
     fireEvent.change(screen.getByLabelText("Profile display name"), { target: { value: "Retryable profile edit" } });
     fireEvent.click(screen.getByRole("button", { name: "Update profile" }));
@@ -835,7 +836,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByText("No memory records returned for selected profile.");
 
     fireEvent.change(screen.getByLabelText("Tag filter"), { target: { value: "Project Context" } });
@@ -863,7 +864,7 @@ describe("App memory record workflow", () => {
         createRecordRepository={() => recordRepository}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Connect MetaMask" }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
     await screen.findByRole("heading", { name: "Style preference" });
 
     fireEvent.click(
@@ -1090,4 +1091,12 @@ function createEncryptedMemoryRecord(): MemoryRecord {
 
 function openAdvancedPanel() {
   fireEvent.click(screen.getByText("Arkiv contract, diagnostics, and network details"));
+}
+
+async function openProfileInspectorEditor() {
+  await screen.findByRole("heading", { name: "Research Agent" });
+  fireEvent.click(within(screen.getByRole("region", { name: "Choose a profile" })).getByRole("button", { name: "Inspect" }));
+  await screen.findByRole("dialog", { name: "Profile detail" });
+  fireEvent.click(screen.getByRole("button", { name: "Edit profile" }));
+  await screen.findByRole("heading", { name: "Edit profile" });
 }

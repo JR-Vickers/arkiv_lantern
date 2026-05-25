@@ -114,7 +114,7 @@ export function App({
   const [wallet, setWallet] = useState<WalletState>({
     status: "idle",
     address: null,
-    message: "Connect MetaMask to scope Arkiv profiles and records to your owner address.",
+    message: "Connect with Metamask to scope Arkiv profiles and records to your owner address.",
   });
   const [profiles, setProfiles] = useState<MemoryProfile[]>([]);
   const [records, setRecords] = useState<MemoryRecord[]>([]);
@@ -176,6 +176,7 @@ export function App({
     record: null,
   });
   const [activeInspector, setActiveInspector] = useState<ActiveInspector>(null);
+  const [profileInspectorMode, setProfileInspectorMode] = useState<"detail" | "edit">("detail");
   const [profileForm, setProfileForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
   const [memoryForm, setMemoryForm] = useState<MemoryRecordFormInput>(emptyMemoryForm);
   const [profileEditForm, setProfileEditForm] = useState<MemoryProfileFormInput>(emptyProfileForm);
@@ -214,11 +215,11 @@ export function App({
     : "Select a profile to build the memory_record query.";
   const workflowSteps = [
     {
-      label: "Connect wallet",
+      label: wallet.status === "connected" ? "Wallet connected" : "Connect with MetaMask",
       detail:
         wallet.status === "connected"
           ? shortenHex(wallet.address)
-          : "Use MetaMask.",
+          : "Click to connect.",
       status: wallet.status === "connected" ? "complete" : "current",
     },
     {
@@ -350,12 +351,16 @@ export function App({
       notes: selectedProfile.payload.notes ?? "",
     });
     setProfileEditErrors({});
-    setProfileUpdate({
-      status: "idle",
-      message: isEntityOwnedBy(selectedProfile, wallet.address)
-        ? "Edit fields are loaded from the selected Arkiv profile."
-        : "Authorization failed: selected profile owner does not match the connected wallet.",
-    });
+    setProfileUpdate((current) =>
+      current.status === "success" || current.status === "submitting"
+        ? current
+        : {
+            status: "idle",
+            message: isEntityOwnedBy(selectedProfile, wallet.address)
+              ? "Edit fields are loaded from the selected Arkiv profile."
+              : "Authorization failed: selected profile owner does not match the connected wallet.",
+          },
+    );
   }, [selectedProfile, wallet.address]);
 
   useEffect(() => {
@@ -487,7 +492,7 @@ export function App({
     event.preventDefault();
 
     if (wallet.status !== "connected" || !profileRepository) {
-      setProfileCreate({ status: "error", message: "Connect MetaMask before creating a profile." });
+      setProfileCreate({ status: "error", message: "Connect with Metamask before creating a profile." });
       return;
     }
 
@@ -526,7 +531,7 @@ export function App({
     if (wallet.status !== "connected" || !ethereum) {
       setWriteDiagnostics({
         status: "error",
-        message: "Connect MetaMask before running write diagnostics.",
+        message: "Connect with Metamask before running write diagnostics.",
         result: null,
       });
       return;
@@ -575,7 +580,7 @@ export function App({
     event.preventDefault();
 
     if (wallet.status !== "connected" || !recordRepository) {
-      setRecordCreate({ status: "error", message: "Connect MetaMask before creating a memory record." });
+      setRecordCreate({ status: "error", message: "Connect with Metamask before creating a memory record." });
       return;
     }
 
@@ -627,7 +632,7 @@ export function App({
     event.preventDefault();
 
     if (wallet.status !== "connected" || !profileRepository) {
-      setProfileUpdate({ status: "error", message: "Connect MetaMask before updating a profile." });
+      setProfileUpdate({ status: "error", message: "Connect with Metamask before updating a profile." });
       return;
     }
 
@@ -659,6 +664,7 @@ export function App({
       setProfileUpdate(successState);
       await refreshProfiles();
       await inspectProfile(selectedProfile.entityKey);
+      setProfileInspectorMode("edit");
       setProfileUpdate(successState);
     } catch (error) {
       if (error instanceof MemoryProfileValidationError) {
@@ -673,7 +679,7 @@ export function App({
 
   async function deleteSelectedProfile() {
     if (wallet.status !== "connected" || !profileRepository) {
-      setProfileDelete({ status: "error", message: "Connect MetaMask before deleting a profile." });
+      setProfileDelete({ status: "error", message: "Connect with Metamask before deleting a profile." });
       return;
     }
 
@@ -723,7 +729,7 @@ export function App({
     event.preventDefault();
 
     if (wallet.status !== "connected" || !recordRepository) {
-      setRecordUpdate({ status: "error", message: "Connect MetaMask before updating a memory record." });
+      setRecordUpdate({ status: "error", message: "Connect with Metamask before updating a memory record." });
       return;
     }
 
@@ -777,7 +783,7 @@ export function App({
 
   async function deleteSelectedRecord() {
     if (wallet.status !== "connected" || !recordRepository) {
-      setRecordDelete({ status: "error", message: "Connect MetaMask before deleting a memory record." });
+      setRecordDelete({ status: "error", message: "Connect with Metamask before deleting a memory record." });
       return;
     }
 
@@ -827,6 +833,7 @@ export function App({
     }
 
     setSelectedProfileKey(entityKey);
+    setProfileInspectorMode("detail");
     setActiveInspector("profile");
     setProfileDetail({ status: "loading", message: "Reading profile entity by key.", profile: null });
 
@@ -836,6 +843,17 @@ export function App({
     } catch (error) {
       setProfileDetail({ status: "error", message: getErrorMessage(error), profile: null });
     }
+  }
+
+  function openProfileEditor(profile: MemoryProfile) {
+    setSelectedProfileKey(profile.entityKey);
+    setProfileEditForm({
+      agentPurpose: profile.payload.agentPurpose,
+      displayName: profile.payload.displayName,
+      notes: profile.payload.notes ?? "",
+    });
+    setProfileEditErrors({});
+    setProfileInspectorMode("edit");
   }
 
   async function inspectRecord(entityKey: Hex) {
@@ -936,6 +954,12 @@ export function App({
     setAppliedTagFilter("");
   }
 
+  const profileInspectorEntity = profileDetail.profile;
+  const canEditProfileInInspector =
+    wallet.status === "connected" &&
+    profileInspectorEntity !== null &&
+    isEntityOwnedBy(profileInspectorEntity, wallet.address);
+
   function scrollToElementById(id: string) {
     const target = document.getElementById(id);
     if (target && typeof target.scrollIntoView === "function") {
@@ -948,13 +972,10 @@ export function App({
       <section className="workspace" aria-labelledby="workflow-title">
         <section className="workflow-panel" aria-labelledby="workflow-title">
           <div className="workflow-intro">
+            <h1 id="workflow-title">[Arkiv Lantern]</h1>
             <div className="workflow-intro-head">
               <p className="eyebrow">Arkiv Braga testnet</p>
-              <button className="wallet-button" type="button" onClick={connectWallet}>
-                {wallet.status === "connected" ? "Wallet connected" : "Connect MetaMask"}
-              </button>
             </div>
-            <h2 id="workflow-title">Arkiv Lantern</h2>
             <p className="hero-copy">
               Create wallet-owned memory for an AI agent, store it on Arkiv, then retrieve it by profile or tag.
             </p>
@@ -962,18 +983,17 @@ export function App({
           <ol className="workflow-steps">
             {workflowSteps.map((step, index) => (
               <li className={`workflow-step ${step.status}`} key={step.label}>
-                <button className="workflow-step-button" type="button" onClick={() => scrollToElementById(`step-${index + 1}`)}>
+                <button
+                  className={`workflow-step-button ${index === 0 ? "workflow-step-connect-button" : ""}`}
+                  type="button"
+                  onClick={index === 0 ? connectWallet : () => scrollToElementById(`step-${index + 1}`)}
+                >
                   <span>{step.label}</span>
                   <p>{step.detail}</p>
                 </button>
               </li>
             ))}
           </ol>
-        </section>
-
-        <section className="notice" aria-label="Public testnet warning">
-          Braga testnet data may be public. Use encryption for sensitive memory bodies; titles, tags, source, and importance
-          remain searchable metadata.
         </section>
 
         <p className={`operation-message ${wallet.status}`} role="status">
@@ -1116,100 +1136,6 @@ export function App({
               <code>{profileQuery}</code>
             </details>
           </section>
-
-          <details className="panel supporting-panel tool-panel">
-            <summary className="details-summary">
-              <div>
-                <p className="eyebrow">Profile tools</p>
-                <h2 id="profile-edit-title">Selected profile</h2>
-                <p className="panel-copy">Edit or delete the selected profile.</p>
-              </div>
-              <code className="owner-pill">{selectedProfile ? shortenHex(selectedProfile.entityKey) : "No profile"}</code>
-            </summary>
-
-            {selectedProfile ? (
-              <form className="profile-form" onSubmit={updateSelectedProfile}>
-                <p className="selected-profile">Arkiv $owner: {selectedProfile.ownerAddress ?? "Not returned"}</p>
-
-                <label className="required-label" htmlFor="editDisplayName">
-                  Profile display name
-                </label>
-                <input
-                  id="editDisplayName"
-                  name="editDisplayName"
-                  value={profileEditForm.displayName}
-                  disabled={profileUpdate.status === "submitting"}
-                  aria-describedby={profileEditErrors.displayName ? "editDisplayName-error" : undefined}
-                  onChange={(event) => setProfileEditForm({ ...profileEditForm, displayName: event.target.value })}
-                />
-                {profileEditErrors.displayName && (
-                  <p className="field-error" id="editDisplayName-error">
-                    {profileEditErrors.displayName}
-                  </p>
-                )}
-
-                <label className="required-label" htmlFor="editAgentPurpose">
-                  Profile agent purpose
-                </label>
-                <textarea
-                  id="editAgentPurpose"
-                  name="editAgentPurpose"
-                  rows={4}
-                  value={profileEditForm.agentPurpose}
-                  disabled={profileUpdate.status === "submitting"}
-                  aria-describedby={profileEditErrors.agentPurpose ? "editAgentPurpose-error" : undefined}
-                  onChange={(event) => setProfileEditForm({ ...profileEditForm, agentPurpose: event.target.value })}
-                />
-                {profileEditErrors.agentPurpose && (
-                  <p className="field-error" id="editAgentPurpose-error">
-                    {profileEditErrors.agentPurpose}
-                  </p>
-                )}
-
-                <label htmlFor="editNotes">Profile notes</label>
-                <textarea
-                  id="editNotes"
-                  name="editNotes"
-                  rows={3}
-                  value={profileEditForm.notes}
-                  disabled={profileUpdate.status === "submitting"}
-                  aria-describedby={profileEditErrors.notes ? "editNotes-error" : undefined}
-                  onChange={(event) => setProfileEditForm({ ...profileEditForm, notes: event.target.value })}
-                />
-                {profileEditErrors.notes && (
-                  <p className="field-error" id="editNotes-error">
-                    {profileEditErrors.notes}
-                  </p>
-                )}
-
-                <div className="mutation-actions">
-                  <button className="primary-action" type="submit" disabled={profileUpdate.status === "submitting"}>
-                    {profileUpdate.status === "submitting" ? "Updating profile" : "Update profile"}
-                  </button>
-                  <button
-                    className="danger-action"
-                    type="button"
-                    disabled={profileDelete.status === "submitting"}
-                    onClick={() => void deleteSelectedProfile()}
-                  >
-                    {profileDelete.status === "submitting" ? "Deleting profile" : "Delete profile"}
-                  </button>
-                </div>
-
-                <p className={`operation-message ${profileUpdate.status}`} role="status">
-                  {profileUpdate.message}
-                </p>
-                {profileUpdate.status === "success" && <ReceiptGrid entityKey={profileUpdate.entityKey} txHash={profileUpdate.txHash} />}
-              </form>
-            ) : (
-              <p className="empty-state">Select a profile to load editable fields.</p>
-            )}
-
-            <p className={`operation-message ${profileDelete.status}`} role="status">
-              {profileDelete.message}
-            </p>
-            {profileDelete.status === "success" && <ReceiptGrid entityKey={profileDelete.entityKey} txHash={profileDelete.txHash} />}
-          </details>
 
           <section className="panel" id="step-3" aria-labelledby="memory-form-title">
             <div className="panel-heading">
@@ -1816,12 +1742,49 @@ export function App({
         {activeInspector === "profile" && (
           <EntityDetailPopover
             explorerUrl={BRAGA_EXPLORER_URL}
+            headerActions={
+              profileInspectorEntity ? (
+                <button
+                  className="secondary-action"
+                  type="button"
+                  disabled={!canEditProfileInInspector || profileUpdate.status === "submitting"}
+                  onClick={() =>
+                    profileInspectorMode === "edit"
+                      ? setProfileInspectorMode("detail")
+                      : openProfileEditor(profileInspectorEntity)
+                  }
+                >
+                  {profileInspectorMode === "edit" ? "Profile detail" : "Edit profile"}
+                </button>
+              ) : null
+            }
             heading="Profile detail"
             label="Inspect"
             status={profileDetail.status}
             message={profileDetail.message}
             entity={profileDetail.profile}
             onClose={() => setActiveInspector(null)}
+            extraContent={
+              profileInspectorMode === "edit" && selectedProfile && profileInspectorEntity ? (
+                <ProfileEditPanel
+                  form={profileEditForm}
+                  formErrors={profileEditErrors}
+                  profile={selectedProfile}
+                  profileDelete={profileDelete}
+                  profileUpdate={profileUpdate}
+                  onDelete={() => void deleteSelectedProfile()}
+                  onFormChange={setProfileEditForm}
+                  onSubmit={updateSelectedProfile}
+                />
+              ) : profileDelete.status === "success" ? (
+                <>
+                  <p className={`operation-message ${profileDelete.status}`} role="status">
+                    {profileDelete.message}
+                  </p>
+                  <ReceiptGrid entityKey={profileDelete.entityKey} txHash={profileDelete.txHash} />
+                </>
+              ) : null
+            }
           />
         )}
       </section>
@@ -1849,10 +1812,120 @@ function ReceiptGrid({ entityKey, txHash }: ReceiptGridProps) {
   );
 }
 
+interface ProfileEditPanelProps {
+  form: MemoryProfileFormInput;
+  formErrors: MemoryProfileFieldErrors;
+  onDelete: () => void;
+  onFormChange: (form: MemoryProfileFormInput) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  profile: MemoryProfile;
+  profileDelete: CreateState;
+  profileUpdate: CreateState;
+}
+
+function ProfileEditPanel({
+  form,
+  formErrors,
+  onDelete,
+  onFormChange,
+  onSubmit,
+  profile,
+  profileDelete,
+  profileUpdate,
+}: ProfileEditPanelProps) {
+  return (
+    <section className="inspector-edit-panel" aria-label="Edit selected profile">
+      <div>
+        <p className="eyebrow">Profile tools</p>
+        <h3>Edit profile</h3>
+        <p className="selected-profile">Arkiv $owner: {profile.ownerAddress ?? "Not returned"}</p>
+      </div>
+
+      <form className="profile-form" onSubmit={onSubmit}>
+        <label className="required-label" htmlFor="editDisplayName">
+          Profile display name
+        </label>
+        <input
+          id="editDisplayName"
+          name="editDisplayName"
+          value={form.displayName}
+          disabled={profileUpdate.status === "submitting"}
+          aria-describedby={formErrors.displayName ? "editDisplayName-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, displayName: event.target.value })}
+        />
+        {formErrors.displayName && (
+          <p className="field-error" id="editDisplayName-error">
+            {formErrors.displayName}
+          </p>
+        )}
+
+        <label className="required-label" htmlFor="editAgentPurpose">
+          Profile agent purpose
+        </label>
+        <textarea
+          id="editAgentPurpose"
+          name="editAgentPurpose"
+          rows={4}
+          value={form.agentPurpose}
+          disabled={profileUpdate.status === "submitting"}
+          aria-describedby={formErrors.agentPurpose ? "editAgentPurpose-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, agentPurpose: event.target.value })}
+        />
+        {formErrors.agentPurpose && (
+          <p className="field-error" id="editAgentPurpose-error">
+            {formErrors.agentPurpose}
+          </p>
+        )}
+
+        <label htmlFor="editNotes">Profile notes</label>
+        <textarea
+          id="editNotes"
+          name="editNotes"
+          rows={3}
+          value={form.notes}
+          disabled={profileUpdate.status === "submitting"}
+          aria-describedby={formErrors.notes ? "editNotes-error" : undefined}
+          onChange={(event) => onFormChange({ ...form, notes: event.target.value })}
+        />
+        {formErrors.notes && (
+          <p className="field-error" id="editNotes-error">
+            {formErrors.notes}
+          </p>
+        )}
+
+        <div className="mutation-actions">
+          <button className="primary-action" type="submit" disabled={profileUpdate.status === "submitting"}>
+            {profileUpdate.status === "submitting" ? "Updating profile" : "Update profile"}
+          </button>
+          <button
+            className="danger-action"
+            type="button"
+            disabled={profileDelete.status === "submitting"}
+            onClick={onDelete}
+          >
+            {profileDelete.status === "submitting" ? "Deleting profile" : "Delete profile"}
+          </button>
+        </div>
+
+        <p className={`operation-message ${profileUpdate.status}`} role="status">
+          {profileUpdate.message}
+        </p>
+        {profileUpdate.status === "success" && <ReceiptGrid entityKey={profileUpdate.entityKey} txHash={profileUpdate.txHash} />}
+      </form>
+
+      <p className={`operation-message ${profileDelete.status}`} role="status">
+        {profileDelete.message}
+      </p>
+      {profileDelete.status === "success" && <ReceiptGrid entityKey={profileDelete.entityKey} txHash={profileDelete.txHash} />}
+    </section>
+  );
+}
+
 interface EntityDetailPopoverProps {
   entity: MemoryProfile | MemoryRecord | null;
   explorerUrl: string;
   extraContent?: ReactNode;
+  headerActions?: ReactNode;
   heading: string;
   label: string;
   message: string;
@@ -1864,6 +1937,7 @@ function EntityDetailPopover({
   entity,
   explorerUrl,
   extraContent,
+  headerActions,
   heading,
   label,
   message,
@@ -1885,6 +1959,7 @@ function EntityDetailPopover({
             <h2 id={`${heading.toLowerCase().replace(/\s+/g, "-")}-title`}>{heading}</h2>
           </div>
           <div className="row-actions">
+            {headerActions}
             <a className="secondary-link" href={explorerUrl}>
               Explorer
             </a>

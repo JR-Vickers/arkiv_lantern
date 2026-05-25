@@ -286,6 +286,8 @@ textarea:disabled {
 }
 
 .workflow-step {
+  position: relative;
+  overflow: hidden;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -294,8 +296,10 @@ textarea:disabled {
 }
 
 .workflow-step-button {
+  position: relative;
+  overflow: hidden;
   width: 100%;
-  padding: 12px;
+  padding: 54px 12px 12px;
   border: 0;
   color: inherit;
   background: transparent;
@@ -304,10 +308,13 @@ textarea:disabled {
 }
 
 .workflow-step::before {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
   display: inline-grid;
   width: 28px;
   height: 28px;
-  margin-bottom: 9px;
   place-items: center;
   border-radius: 999px;
   color: var(--muted);
@@ -355,6 +362,43 @@ textarea:disabled {
 
 .workflow-step.locked {
   opacity: 0.72;
+}
+
+.workflow-step-connect-button {
+  min-height: 132px;
+  border-radius: 8px;
+}
+
+.workflow-step.current .workflow-step-connect-button {
+  color: #f5fffd;
+  background: linear-gradient(135deg, #00afcb, #00df9a);
+  box-shadow: 0 10px 30px rgba(0, 175, 203, 0.36);
+}
+
+.workflow-step.current .workflow-step-connect-button:hover {
+  background: linear-gradient(135deg, #24ceff, #1effb3);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(0, 223, 154, 0.36);
+}
+
+.workflow-step.current .workflow-step-connect-button::after {
+  position: absolute;
+  top: 0;
+  left: -160%;
+  width: 62%;
+  height: 100%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+  content: "";
+}
+
+.workflow-step.current .workflow-step-connect-button:hover::after {
+  animation: ctaShimmer 900ms ease-out;
+}
+
+.workflow-step.current .workflow-step-connect-button p,
+.workflow-step.current .workflow-step-connect-button span {
+  color: #f5fffd;
 }
 
 .status-strip div {
@@ -879,6 +923,14 @@ pre {
   display: grid;
   gap: 8px;
   margin-top: 16px;
+}
+
+.inspector-edit-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .decrypted-body {
