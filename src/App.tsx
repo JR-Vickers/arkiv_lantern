@@ -1076,6 +1076,30 @@ export function App({
     }
   }
 
+  function handleWorkflowStepClick(index: number) {
+    if (index === 0) {
+      void connectWallet();
+      return;
+    }
+
+    if (wallet.status !== "connected") {
+      scrollToElementById("step-1");
+      return;
+    }
+
+    if (index === 1) {
+      scrollToElementById(profiles.length > 0 ? "step-2" : "step-1");
+      return;
+    }
+
+    if (index === 2) {
+      scrollToElementById(selectedProfileKey ? "step-3" : profiles.length > 0 ? "step-2" : "step-1");
+      return;
+    }
+
+    scrollToElementById(selectedProfileKey ? "step-4" : profiles.length > 0 ? "step-2" : "step-1");
+  }
+
   return (
     <main className="app-shell">
       <section className="workspace" aria-labelledby="workflow-title">
@@ -1095,7 +1119,7 @@ export function App({
                 <button
                   className={`workflow-step-button ${index === 0 ? "workflow-step-connect-button" : ""}`}
                   type="button"
-                  onClick={index === 0 ? connectWallet : () => scrollToElementById(`step-${index + 1}`)}
+                  onClick={() => handleWorkflowStepClick(index)}
                 >
                   <span>{step.label}</span>
                   <p>{step.detail}</p>
