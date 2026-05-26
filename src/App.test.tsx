@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { toHex, type Hash, type Hex } from "@arkiv-network/sdk";
 
 import { App } from "./App";
-import { BRAGA_CHAIN_ID, BRAGA_RPC_URL, CONTENT_TYPE_JSON } from "./lib/arkiv/contract";
+import { BRAGA_CHAIN_ID, BRAGA_RPC_URL, CONTENT_TYPE_JSON, createTagAttributeKey } from "./lib/arkiv/contract";
 import { MEMORY_BODY_ENCRYPTION_SCHEME } from "./lib/crypto/memoryEncryption";
 import {
   MemoryProfileValidationError,
@@ -909,7 +909,7 @@ describe("App memory record workflow", () => {
       });
     });
     const memorySection = screen.getByRole("region", { name: "Retrieve memories" });
-    const recordQuery = screen.getByText(/tag = "project-context"/);
+    const recordQuery = screen.getByText(new RegExp(`${createTagAttributeKey("project-context")} = "project-context"`));
     expect(within(memorySection).getByText("Advanced")).toBeVisible();
     expect(recordQuery).not.toBeVisible();
 
@@ -1089,8 +1089,8 @@ function createMemoryRecord({
       { key: "entityType", value: "memory_record" },
       { key: "ownerAddress", value: ownerAddress },
       { key: "profileEntityKey", value: profileEntityKey },
-      { key: "tag", value: "preference" },
-      { key: "tag", value: "research" },
+      { key: createTagAttributeKey("preference"), value: "preference" },
+      { key: createTagAttributeKey("research"), value: "research" },
     ],
     contentType: CONTENT_TYPE_JSON,
     createdAtBlock: 110n,
@@ -1120,8 +1120,8 @@ function createEncryptedMemoryRecord(): MemoryRecord {
       { key: "ownerAddress", value: ownerAddress },
       { key: "profileEntityKey", value: profileEntityKey },
       { key: "schemaVersion", value: "1" },
-      { key: "tag", value: "preference" },
-      { key: "tag", value: "private" },
+      { key: createTagAttributeKey("preference"), value: "preference" },
+      { key: createTagAttributeKey("private"), value: "private" },
       { key: "createdAt", value: now.toISOString() },
       { key: "updatedAt", value: now.toISOString() },
     ],

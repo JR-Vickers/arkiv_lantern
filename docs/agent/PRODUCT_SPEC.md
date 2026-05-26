@@ -88,7 +88,7 @@ Required behavior:
 - Add `PROJECT_ATTRIBUTE`.
 - Set entity type attribute to `memory_record`.
 - Add `profileEntityKey` relationship attribute.
-- Add `ownerAddress` and one normalized lowercase `tag` attribute per tag.
+- Add `ownerAddress` and one unique encoded tag attribute per normalized lowercase tag.
 - If memory bodies are not encrypted, show an inline public-testnet warning before submit.
 - If encryption is enabled, require an explicit user-entered passphrase, encrypt the memory body in the browser before writing to Arkiv, and do not persist the passphrase, derived key, or plaintext body outside ephemeral UI state.
 - Encrypted records may keep title, tags, source, and importance as plaintext searchable metadata, but must not leak body plaintext into Arkiv attributes.
@@ -114,7 +114,7 @@ Required behavior:
 - Memory record queries include `entityType = memory_record`.
 - Personal views include `ownerAddress` or Arkiv `$owner` filtering for the connected wallet.
 - Profile-specific record queries include `profileEntityKey`.
-- Tag filters use normalized lowercase `tag` attributes, not payload-only filtering.
+- Tag filters use normalized lowercase tag attributes, not payload-only filtering. Because Braga rejects duplicate annotation keys, each tag is indexed under a unique encoded key and stores the normalized tag as its value.
 
 ### Update Or Delete
 

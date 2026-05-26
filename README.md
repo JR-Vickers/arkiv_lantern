@@ -106,6 +106,12 @@ Run the full local gate:
 ./scripts/check.sh
 ```
 
+Before claiming final challenge submission readiness, run:
+
+```bash
+SUBMISSION_READY=true ./scripts/check.sh
+```
+
 Run individual checks:
 
 ```bash

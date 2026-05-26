@@ -50,7 +50,7 @@ Let's go with 365 days.
 - Confirm required entity types: `memory_profile` and `memory_record`.  Confirmed
 - Should memory payload bodies be plaintext demo data or encrypted client-side?  Phase 6 update: preserve existing plaintext behavior, but add an explicit opt-in client-side encryption workflow for memory records.
 - If plaintext demo data is allowed, confirm that an inline public-testnet warning before memory submission is sufficient.  Yes for plaintext submissions; encrypted submissions must clearly show that a passphrase is required and not recoverable by the app.
-- Confirm tag indexing contract: one normalized lowercase `tag` attribute per tag, with `tags` retained in the JSON payload.  Yes.
+- Confirm tag indexing contract: one normalized lowercase tag value per tag, with `tags` retained in the JSON payload. Updated on 2026-05-26 after live Braga rejected duplicate `tag` annotation keys: use unique encoded tag attribute keys instead of repeated `tag` keys.
 
 ### Useful But Not Blocking
 

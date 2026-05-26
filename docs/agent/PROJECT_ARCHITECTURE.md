@@ -149,15 +149,15 @@ Required attributes:
 - `entityType = memory_record`
 - `profileEntityKey`
 - `ownerAddress = connected wallet address`
-- `tag = one normalized lowercase tag value`
+- `tag_<encoded normalized tag> = one normalized lowercase tag value`
 - `createdAt`
 - `updatedAt`
 
 Tag contract:
 
 - Payload stores `tags` as an array of displayable strings.
-- Attributes store one `tag` entry per normalized lowercase tag so Arkiv can query by tag.
-- If the selected Arkiv SDK does not support repeated attribute keys, the implementation must document the supported equivalent before coding and update tests accordingly.
+- Attributes store one unique `tag_<hex>` entry per normalized lowercase tag so Arkiv can query by tag without duplicate annotation keys.
+- Earlier design notes used repeated `tag` attribute keys; live Braga validation rejects duplicate annotation keys, so the supported equivalent is unique encoded tag keys with the normalized tag retained as the value.
 
 Relationship:
 

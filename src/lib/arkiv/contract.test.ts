@@ -13,6 +13,7 @@ import {
   assertValidProjectAttributes,
   buildMemoryRecordQuery,
   buildProfileQuery,
+  createTagAttributeKey,
   createMemoryProfileEntityDraft,
   createMemoryRecordEntityDraft,
   hasProjectAttribute,
@@ -71,8 +72,10 @@ describe("Arkiv contract guardrails", () => {
     expect(hasProjectAttribute(draft.attributes)).toBe(true);
     expect(draft.attributes).toContainEqual({ key: "entityType", value: "memory_record" });
     expect(draft.attributes).toContainEqual({ key: "profileEntityKey", value: "profile_123" });
-    expect(draft.attributes).toContainEqual({ key: "tag", value: "preference" });
-    expect(draft.attributes).toContainEqual({ key: "tag", value: "project" });
+    expect(draft.attributes).toContainEqual({ key: createTagAttributeKey("preference"), value: "preference" });
+    expect(draft.attributes).toContainEqual({ key: createTagAttributeKey("project"), value: "project" });
+    expect(draft.attributes.map((attribute) => attribute.key)).not.toContain("tag");
+    expect(new Set(draft.attributes.map((attribute) => attribute.key)).size).toBe(draft.attributes.length);
     expect(draft.payload.tags).toEqual(["preference", "project"]);
   });
 
@@ -167,7 +170,7 @@ describe("Arkiv contract guardrails", () => {
     expect(query).toContain(`ownerAddress = "${ownerAddress}"`);
     expect(query).toContain(`$owner = "${ownerAddress}"`);
     expect(query).toContain('profileEntityKey = "profile_123"');
-    expect(query).toContain('tag = "project-context"');
+    expect(query).toContain(`${createTagAttributeKey("project-context")} = "project-context"`);
   });
 
   it("reports invalid project attributes as absent", () => {

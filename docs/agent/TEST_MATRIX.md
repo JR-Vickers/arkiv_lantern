@@ -16,7 +16,7 @@ Do not install these during bootstrap unless the human explicitly moves the proj
 | Arkiv Braga config | Config targets Braga; missing config fails loudly; no production credentials required. | AC-002, AC-014 | Unit/integration |
 | Entity schema validation | Valid profile; invalid missing display name; valid memory; invalid missing profile; invalid tag formats; boundary body length; both required entity types set payload, attributes, content type, and `expiresIn`. | AC-003, AC-006, AC-007, AC-015 | Unit |
 | Relationship modeling | `memory_record` stores `profileEntityKey`; profile-specific query uses `project`, owner scope, `entityType`, and `profileEntityKey`. | AC-004, AC-008 | Unit/integration |
-| Tag indexing | Payload stores `tags`; each normalized lowercase tag is indexed as a `tag` attribute; tag queries use attributes rather than payload-only filtering. | AC-008, AC-015 | Unit/integration |
+| Tag indexing | Payload stores `tags`; each normalized lowercase tag is indexed as a unique encoded tag attribute; tag queries use attributes rather than payload-only filtering. | AC-008, AC-015 | Unit/integration |
 | Wallet state | Disconnected state; connected state; wallet switch; rejected connection. | AC-005, AC-011 | Component/smoke |
 | Loading states | Profile query loading state; memory query loading state; create/update/delete pending state does not blank the app. | AC-011 | Component/smoke |
 | Profile workflow | No profiles empty state; create profile; owner-scoped query profile; reload and query again; create failure. | AC-006, AC-011, AC-012 | Integration/smoke |

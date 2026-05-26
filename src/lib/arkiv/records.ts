@@ -17,6 +17,7 @@ import {
   assertValidProjectAttributes,
   buildMemoryRecordQuery,
   createMemoryRecordEntityDraft,
+  isTagAttributeKey,
   normalizeTags,
   type ArkivAttribute,
   type ArkivEntityDraft,
@@ -429,7 +430,7 @@ function assertRecordRelationshipAttributes(
 ): void {
   const profileEntityKey = findStringAttribute(attributes, "profileEntityKey");
   const ownerAddress = findStringAttribute(attributes, "ownerAddress");
-  const indexedTags = attributes.filter((attribute) => attribute.key === "tag").map((attribute) => String(attribute.value));
+  const indexedTags = attributes.filter((attribute) => isTagAttributeKey(attribute.key)).map((attribute) => String(attribute.value));
 
   if (!ownerAddress) {
     throw new MemoryRecordEntityError("memory_record is missing ownerAddress attribute.");

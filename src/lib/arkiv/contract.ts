@@ -32,6 +32,7 @@ export const ENTITY_EXPIRES_IN_DAYS = 365;
 export const ENTITY_EXPIRES_IN_SECONDS = ENTITY_EXPIRES_IN_DAYS * 24 * 60 * 60;
 export const SCHEMA_VERSION = "1";
 export const MEMORY_BODY_LIMIT_CHARS = 200_000;
+export const TAG_ATTRIBUTE_KEY_PREFIX = "tag_";
 
 export type EntityType = (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES];
 
@@ -105,6 +106,19 @@ export function normalizeTag(tag: string): string {
 
 export function normalizeTags(tags: string[]): string[] {
   return Array.from(new Set(tags.map(normalizeTag).filter(Boolean))).sort();
+}
+
+export function createTagAttributeKey(tag: string): string {
+  const normalizedTag = normalizeTag(tag);
+  const encodedTag = Array.from(new TextEncoder().encode(normalizedTag), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+
+  return `${TAG_ATTRIBUTE_KEY_PREFIX}${encodedTag}`;
+}
+
+export function isTagAttributeKey(key: string): boolean {
+  return key === "tag" || key.startsWith(TAG_ATTRIBUTE_KEY_PREFIX);
 }
 
 export function escapeQueryValue(value: string): string {
@@ -228,7 +242,7 @@ export function createMemoryRecordEntityDraft(
     attributes: [
       ...createBaseAttributes(ENTITY_TYPES.memoryRecord, ownerAddress),
       { key: "profileEntityKey", value: payload.profileEntityKey },
-      ...tags.map((tag) => ({ key: "tag", value: tag })),
+      ...tags.map((tag) => ({ key: createTagAttributeKey(tag), value: tag })),
       { key: "createdAt", value: payload.createdAt },
       { key: "updatedAt", value: payload.updatedAt },
     ],
@@ -265,7 +279,8 @@ export function buildMemoryRecordQuery({
   }
 
   if (tag) {
-    filters.push(`tag = "${escapeQueryValue(normalizeTag(tag))}"`);
+    const normalizedTag = normalizeTag(tag);
+    filters.push(`${createTagAttributeKey(normalizedTag)} = "${escapeQueryValue(normalizedTag)}"`);
   }
 
   return assertProjectScopedQuery(filters.join(" && "));
