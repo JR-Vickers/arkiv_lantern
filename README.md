@@ -54,9 +54,7 @@ You need a MetaMask account with Braga testnet funds to submit write transaction
 
 ## Full Deployment Path
 
-This app defaults to Arkiv Braga testnet for development and demo use.
-
-For a full deployment beyond Braga, you should:
+This app defaults to Arkiv Braga testnet.  For a full deployment beyond Braga, have your agent:
 
 1. Point Arkiv client configuration to your target Arkiv network (chain ID, RPC, explorer, and SDK network config).
 2. Update wallet-network prompts so MetaMask requests the target network instead of Braga.
