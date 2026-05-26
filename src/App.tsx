@@ -114,6 +114,120 @@ export function App({
   runProfileCreateDiagnostics = (provider, ownerAddress, draft) =>
     diagnoseCreateEntityDraft({ draft, ownerAddress, provider }),
 }: AppProps) {
+  const resetWalletScopedState = useCallback(() => {
+    setProfiles([]);
+    setRecords([]);
+    setSelectedProfileKey("");
+    setSelectedRecordKey("");
+    setTagFilter("");
+    setAppliedTagFilter("");
+    setProfileFormErrors({});
+    setMemoryFormErrors({});
+    setProfileEditErrors({});
+    setRecordEditErrors({});
+    setProfileCreate({
+      status: "idle",
+      message: "Profile writes require a connected MetaMask account on Arkiv Braga.",
+    });
+    setRecordCreate({
+      status: "idle",
+      message: "Memory writes require a selected profile and connected MetaMask account on Arkiv Braga.",
+    });
+    setProfileUpdate({
+      status: "idle",
+      message: "Select a profile you own to edit or delete it.",
+    });
+    setProfileDelete({
+      status: "idle",
+      message: "Delete requires explicit confirmation and the connected wallet must be Arkiv $owner.",
+    });
+    setRecordUpdate({
+      status: "idle",
+      message: "Select a memory record you own to edit or delete it.",
+    });
+    setRecordDelete({
+      status: "idle",
+      message: "Delete requires explicit confirmation and the connected wallet must be Arkiv $owner.",
+    });
+    setRecordDecrypt({
+      body: null,
+      status: "idle",
+      message: "Encrypted memory bodies stay locked until the owner enters the passphrase.",
+    });
+    setRecordDecryptPassphrase("");
+    setWriteDiagnostics({
+      status: "idle",
+      message: "Run diagnostics before retrying a failed live write.",
+      result: null,
+    });
+    setProfileDetail({
+      status: "idle",
+      message: "Inspect a profile to read the entity payload and metadata by key.",
+      profile: null,
+    });
+    setRecordDetail({
+      status: "idle",
+      message: "Open a memory record to inspect payload and Arkiv metadata.",
+      record: null,
+    });
+  }, []);
+
+  useEffect(() => {
+    const ethereum = window.ethereum;
+    if (!ethereum) {
+      return;
+    }
+
+    const syncWalletAddress = (accounts: unknown) => {
+      const address = getFirstWalletAddress(accounts);
+
+      if (!address) {
+        resetWalletScopedState();
+        setWallet({
+          status: "idle",
+          address: null,
+          message: "Connect with Metamask to scope Arkiv profiles and records to your owner address.",
+        });
+        return;
+      }
+
+      setWallet((current) => {
+        if (current.status === "connected" && current.address.toLowerCase() === address.toLowerCase()) {
+          return current;
+        }
+
+        resetWalletScopedState();
+        return {
+          status: "connected",
+          address,
+          message: "Wallet connected on Arkiv Braga. Writes will use this owner address.",
+        };
+      });
+    };
+
+    const syncFromProvider = async () => {
+      try {
+        const accounts = await ethereum.request({ method: "eth_accounts" });
+        syncWalletAddress(accounts);
+      } catch {
+        // Keep the current UI state if passive account reconciliation fails.
+      }
+    };
+
+    const onAccountsChanged = (accounts: unknown) => {
+      syncWalletAddress(accounts);
+    };
+
+    ethereum.on?.("accountsChanged", onAccountsChanged);
+    window.addEventListener("focus", syncFromProvider);
+    void syncFromProvider();
+
+    return () => {
+      ethereum.removeListener?.("accountsChanged", onAccountsChanged);
+      window.removeEventListener("focus", syncFromProvider);
+    };
+  }, [resetWalletScopedState]);
+
   const [wallet, setWallet] = useState<WalletState>({
     status: "idle",
     address: null,
@@ -432,61 +546,7 @@ export function App({
       }
 
       await ensureBragaWalletNetwork(ethereum);
-      setProfiles([]);
-      setRecords([]);
-      setSelectedProfileKey("");
-      setSelectedRecordKey("");
-      setTagFilter("");
-      setAppliedTagFilter("");
-      setProfileFormErrors({});
-      setMemoryFormErrors({});
-      setProfileEditErrors({});
-      setRecordEditErrors({});
-      setProfileCreate({
-        status: "idle",
-        message: "Profile writes require a connected MetaMask account on Arkiv Braga.",
-      });
-      setRecordCreate({
-        status: "idle",
-        message: "Memory writes require a selected profile and connected MetaMask account on Arkiv Braga.",
-      });
-      setProfileUpdate({
-        status: "idle",
-        message: "Select a profile you own to edit or delete it.",
-      });
-      setProfileDelete({
-        status: "idle",
-        message: "Delete requires explicit confirmation and the connected wallet must be Arkiv $owner.",
-      });
-      setRecordUpdate({
-        status: "idle",
-        message: "Select a memory record you own to edit or delete it.",
-      });
-      setRecordDelete({
-        status: "idle",
-        message: "Delete requires explicit confirmation and the connected wallet must be Arkiv $owner.",
-      });
-      setRecordDecrypt({
-        body: null,
-        status: "idle",
-        message: "Encrypted memory bodies stay locked until the owner enters the passphrase.",
-      });
-      setRecordDecryptPassphrase("");
-      setWriteDiagnostics({
-        status: "idle",
-        message: "Run diagnostics before retrying a failed live write.",
-        result: null,
-      });
-      setProfileDetail({
-        status: "idle",
-        message: "Inspect a profile to read the entity payload and metadata by key.",
-        profile: null,
-      });
-      setRecordDetail({
-        status: "idle",
-        message: "Open a memory record to inspect payload and Arkiv metadata.",
-        record: null,
-      });
+      resetWalletScopedState();
       setWallet({
         status: "connected",
         address,
