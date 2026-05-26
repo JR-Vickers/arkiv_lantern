@@ -52,6 +52,19 @@ When you connect MetaMask, the app requests the Arkiv Braga network if needed.
 
 You need a MetaMask account with Braga testnet funds to submit write transactions.
 
+## Full Deployment Path
+
+This app defaults to Arkiv Braga testnet for development and demo use.
+
+For a full deployment beyond Braga, you should:
+
+1. Point Arkiv client configuration to your target Arkiv network (chain ID, RPC, explorer, and SDK network config).
+2. Update wallet-network prompts so MetaMask requests the target network instead of Braga.
+3. Run the full local gate (`./scripts/check.sh`) plus live write/read verification on that network.
+4. Deploy the built app (`npm run build`) to your host and validate end-to-end wallet + Arkiv flows.
+
+If you do this, treat all plaintext memory bodies as public unless you keep encryption enabled for sensitive content.
+
 ## Privacy Model: Plaintext vs Encrypted Memory Body
 
 `memory_record` supports two body modes:
