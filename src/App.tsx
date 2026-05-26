@@ -105,6 +105,7 @@ const emptyMemoryForm: MemoryRecordFormInput = {
 };
 
 const OTHER_CAPTURE_METHOD = "other" as const;
+const MAX_VISIBLE_MEMORY_RECORDS = 20;
 
 export function App({
   createProfileRepository = createBrowserMemoryProfileRepository,
@@ -210,6 +211,8 @@ export function App({
   const ownerAddress = wallet.address ?? "0x0000000000000000000000000000000000000000";
   const selectedProfile = profiles.find((profile) => profile.entityKey === selectedProfileKey) ?? null;
   const selectedRecord = records.find((record) => record.entityKey === selectedRecordKey) ?? null;
+  const visibleRecords = records.slice(0, MAX_VISIBLE_MEMORY_RECORDS);
+  const hiddenRecordCount = Math.max(records.length - visibleRecords.length, 0);
   const recordQuery = selectedProfileKey
     ? buildMemoryRecordQuery({
         ownerAddress,
@@ -287,7 +290,7 @@ export function App({
     }
   }, [profileRepository, wallet]);
 
-  const refreshRecords = useCallback(async () => {
+  const refreshRecords = useCallback(async (tagOverride?: string) => {
     if (wallet.status !== "connected" || !recordRepository) {
       return;
     }
@@ -298,13 +301,14 @@ export function App({
       return;
     }
 
+    const queryTag = tagOverride === undefined ? appliedTagFilter : tagOverride;
     setRecordLoad({ status: "loading", message: "Querying Arkiv Braga for profile-scoped memory records." });
 
     try {
       const nextRecords = await recordRepository.listRecords({
         ownerAddress: wallet.address,
         profileEntityKey: selectedProfileKey,
-        tag: appliedTagFilter || undefined,
+        tag: queryTag || undefined,
       });
       setRecords(nextRecords);
       setSelectedRecordKey((currentRecordKey) => {
@@ -318,8 +322,10 @@ export function App({
         status: "success",
         message:
           nextRecords.length === 0
-            ? "No memory records returned for selected profile."
-            : `${nextRecords.length} memory record${nextRecords.length === 1 ? "" : "s"} returned for selected profile.`,
+            ? queryTag
+              ? "No memory records returned for selected profile and tag."
+              : "No memory records returned for selected profile."
+            : `${nextRecords.length} memory record${nextRecords.length === 1 ? "" : "s"} returned for selected profile${queryTag ? " and tag" : ""}.`,
       });
     } catch (error) {
       setRecordLoad({ status: "error", message: getErrorMessage(error) });
@@ -331,16 +337,19 @@ export function App({
   }, [refreshProfiles]);
 
   useEffect(() => {
-    void refreshRecords();
-  }, [refreshRecords]);
-
-  useEffect(() => {
+    setRecords([]);
     setRecordDetail({
       status: "idle",
       message: "Open a memory record to inspect payload and Arkiv metadata.",
       record: null,
     });
     setSelectedRecordKey("");
+    setRecordLoad({
+      status: "idle",
+      message: selectedProfileKey
+        ? "Profile selected. Load latest memories or query by tag."
+        : "Select a profile to query memory records.",
+    });
   }, [selectedProfileKey]);
 
   useEffect(() => {
@@ -621,7 +630,8 @@ export function App({
           : "Memory record transaction confirmed on Arkiv Braga.",
         txHash: result.txHash,
       });
-      await refreshRecords();
+      setAppliedTagFilter("");
+      await refreshRecords("");
       await inspectRecord(result.entityKey);
     } catch (error) {
       if (error instanceof MemoryRecordValidationError) {
@@ -970,12 +980,22 @@ export function App({
 
   function queryRecordsByTag(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setAppliedTagFilter(tagFilter.trim());
+    const nextTagFilter = tagFilter.trim();
+    setAppliedTagFilter(nextTagFilter);
+    void refreshRecords(nextTagFilter);
   }
 
   function clearTagFilter() {
     setTagFilter("");
     setAppliedTagFilter("");
+    setRecords([]);
+    setSelectedRecordKey("");
+    setRecordLoad({
+      status: "idle",
+      message: selectedProfileKey
+        ? "Tag filter cleared. Load latest memories or query another tag."
+        : "Select a profile to query memory records.",
+    });
   }
 
   const profileInspectorEntity = profileDetail.profile;
@@ -1424,9 +1444,13 @@ export function App({
                 className="secondary-action"
                 type="button"
                 disabled={!selectedProfileKey || !recordRepository || recordLoad.status === "loading"}
-                onClick={() => void refreshRecords()}
+                onClick={() => {
+                  setTagFilter("");
+                  setAppliedTagFilter("");
+                  void refreshRecords("");
+                }}
               >
-                Refresh
+                Load latest
               </button>
             </div>
 
@@ -1455,7 +1479,7 @@ export function App({
 
             {records.length > 0 ? (
               <div className="profile-list" aria-label="Memory records">
-                {records.map((record) => (
+                {visibleRecords.map((record) => (
                   <article className={`profile-row ${record.entityKey === selectedRecordKey ? "selected" : ""}`} key={record.entityKey}>
                     <div>
                       <h3>{record.payload.title}</h3>
@@ -1478,12 +1502,19 @@ export function App({
                     </div>
                   </article>
                 ))}
+                {hiddenRecordCount > 0 && (
+                  <p className="empty-state">
+                    Showing {MAX_VISIBLE_MEMORY_RECORDS} of {records.length} memories. Use the tag filter to narrow this profile.
+                  </p>
+                )}
               </div>
             ) : (
               <p className="empty-state">
-                {selectedProfileKey
-                  ? "No memories match this profile and tag. Save one above, or clear the tag filter."
-                  : "Select a profile before retrieving memories."}
+                {selectedProfileKey && recordLoad.status === "idle"
+                  ? "No memories loaded yet. Load latest memories or query a tag."
+                  : selectedProfileKey
+                    ? "No memories match this profile and tag. Save one above, or clear the tag filter."
+                    : "Select a profile before retrieving memories."}
               </p>
             )}
 

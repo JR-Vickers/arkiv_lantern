@@ -401,6 +401,59 @@ describe("App profile workflow", () => {
 });
 
 describe("App memory record workflow", () => {
+  it("does not automatically load profile records until the user queries Step 4", async () => {
+    installEthereumProvider();
+    const profileRepository = createProfileRepository([createProfile()]);
+    const recordRepository = createRecordRepository([createMemoryRecord()]);
+
+    render(
+      <App
+        createProfileRepository={() => profileRepository}
+        createRecordRepository={() => recordRepository}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+
+    expect(await screen.findByText("Profile selected. Load latest memories or query by tag.")).toBeInTheDocument();
+    expect(screen.getByText("No memories loaded yet. Load latest memories or query a tag.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Style preference" })).not.toBeInTheDocument();
+    expect(recordRepository.listRecords).not.toHaveBeenCalled();
+
+    await loadLatestRecords();
+
+    expect(await screen.findByRole("heading", { name: "Style preference" })).toBeInTheDocument();
+    expect(recordRepository.listRecords).toHaveBeenCalledWith({
+      ownerAddress,
+      profileEntityKey,
+      tag: undefined,
+    });
+  });
+
+  it("caps the visible memory list and tells users to narrow large result sets", async () => {
+    installEthereumProvider();
+    const profileRepository = createProfileRepository([createProfile()]);
+    const records = Array.from({ length: 22 }, (_, index) =>
+      createMemoryRecord({
+        entityKey: `0x${String(index + 1).padStart(64, "0")}` as Hex,
+        title: `Style preference ${index + 1}`,
+      }),
+    );
+    const recordRepository = createRecordRepository(records);
+
+    render(
+      <App
+        createProfileRepository={() => profileRepository}
+        createRecordRepository={() => recordRepository}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await loadLatestRecords();
+
+    expect(screen.getByText("Showing 20 of 22 memories. Use the tag filter to narrow this profile.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Style preference 20" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Style preference 21" })).not.toBeInTheDocument();
+  });
+
   it("shows create-memory validation errors from the repository", async () => {
     installEthereumProvider();
     const profileRepository = createProfileRepository([createProfile()]);
@@ -420,7 +473,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("No memory records returned for selected profile.");
+    await screen.findByText("Profile selected. Load latest memories or query by tag.");
 
     fireEvent.click(screen.getByRole("button", { name: "Save memory" }));
 
@@ -455,7 +508,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("No memory records returned for selected profile.");
+    await screen.findByText("Profile selected. Load latest memories or query by tag.");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Style preference" } });
     fireEvent.change(screen.getByLabelText("Body"), {
@@ -497,7 +550,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("No memory records returned for selected profile.");
+    await screen.findByText("Profile selected. Load latest memories or query by tag.");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Encrypted style preference" } });
     fireEvent.click(screen.getByLabelText("Encrypt memory body with a passphrase"));
@@ -550,7 +603,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("No memory records returned for selected profile.");
+    await screen.findByText("Profile selected. Load latest memories or query by tag.");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Encrypted style preference" } });
     fireEvent.click(screen.getByLabelText("Encrypt memory body with a passphrase"));
@@ -592,6 +645,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await loadLatestRecords();
 
     expect(await screen.findByRole("heading", { name: "Encrypted style preference" })).toBeInTheDocument();
     expect(screen.getAllByText(/Encrypted body locked/i).length).toBeGreaterThan(0);
@@ -613,6 +667,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await loadLatestRecords();
     await screen.findByRole("heading", { name: "Encrypted style preference" });
 
     fireEvent.click(
@@ -646,6 +701,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await loadLatestRecords();
     await screen.findByRole("heading", { name: "Encrypted style preference" });
 
     fireEvent.click(
@@ -840,7 +896,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
-    await screen.findByText("No memory records returned for selected profile.");
+    await screen.findByText("Profile selected. Load latest memories or query by tag.");
 
     fireEvent.change(screen.getByLabelText("Tag filter"), { target: { value: "Project Context" } });
     fireEvent.click(screen.getByRole("button", { name: "Query tag" }));
@@ -868,6 +924,7 @@ describe("App memory record workflow", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Connect with MetaMask/i }));
+    await loadLatestRecords();
     await screen.findByRole("heading", { name: "Style preference" });
 
     fireEvent.click(
@@ -1011,7 +1068,13 @@ function createProfile(): MemoryProfile {
   };
 }
 
-function createMemoryRecord(): MemoryRecord {
+function createMemoryRecord({
+  entityKey = recordEntityKey,
+  title = "Style preference",
+}: {
+  entityKey?: Hex;
+  title?: string;
+} = {}): MemoryRecord {
   return {
     attributes: [
       { key: "project", value: "arkiv-database-owned-memory-v1" },
@@ -1024,7 +1087,7 @@ function createMemoryRecord(): MemoryRecord {
     contentType: CONTENT_TYPE_JSON,
     createdAtBlock: 110n,
     creatorAddress: ownerAddress,
-    entityKey: recordEntityKey,
+    entityKey,
     expiresAtBlock: 210n,
     ownerAddress,
     payload: {
@@ -1035,7 +1098,7 @@ function createMemoryRecord(): MemoryRecord {
       schemaVersion: "1",
       source: "manual",
       tags: ["preference", "research"],
-      title: "Style preference",
+      title,
       updatedAt: now.toISOString(),
     },
   };
@@ -1105,9 +1168,19 @@ async function openProfileInspectorEditor() {
 }
 
 async function openRecordInspectorEditor() {
+  await loadLatestRecords();
   await screen.findByRole("heading", { name: "Style preference" });
   fireEvent.click(within(screen.getByRole("region", { name: "Retrieve memories" })).getByRole("button", { name: "Inspect" }));
   await screen.findByRole("dialog", { name: "Memory detail" });
   fireEvent.click(screen.getByRole("button", { name: "Edit memory" }));
   await screen.findByRole("heading", { name: "Edit memory" });
+}
+
+async function loadLatestRecords() {
+  const loadButton = within(screen.getByRole("region", { name: "Retrieve memories" })).getByRole("button", {
+    name: "Load latest",
+  });
+  await waitFor(() => expect(loadButton).not.toBeDisabled());
+  fireEvent.click(loadButton);
+  await screen.findByText(/memory record.*returned for selected profile/i);
 }
