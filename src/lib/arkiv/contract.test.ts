@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ArkivConfigError,
+  ArkivAttributeError,
   ArkivProjectAttributeError,
   BRAGA_RPC_URL,
   CONTENT_TYPE_JSON,
@@ -9,6 +10,7 @@ import {
   PROJECT_ATTRIBUTE_KEY,
   PROJECT_ATTRIBUTE_VALUE,
   assertProjectScopedEntityDraft,
+  assertUniqueAttributeKeys,
   assertProjectScopedQuery,
   assertValidProjectAttributes,
   buildMemoryRecordQuery,
@@ -127,6 +129,32 @@ describe("Arkiv contract guardrails", () => {
         attributes: draft.attributes.filter((attribute) => attribute.key !== PROJECT_ATTRIBUTE_KEY),
       }),
     ).toThrow(ArkivProjectAttributeError);
+  });
+
+  it("rejects duplicate entity attribute keys before signing", () => {
+    expect(() =>
+      assertUniqueAttributeKeys([
+        { key: "tag", value: "preference" },
+        { key: "tag", value: "research" },
+      ]),
+    ).toThrow(ArkivAttributeError);
+
+    const draft = createMemoryProfileEntityDraft(
+      {
+        displayName: "Demo Agent",
+        agentPurpose: "Remember user-owned preferences",
+        createdAt: now,
+        updatedAt: now,
+      },
+      ownerAddress,
+    );
+
+    expect(() =>
+      assertProjectScopedEntityDraft({
+        ...draft,
+        attributes: [...draft.attributes, { key: "ownerAddress", value: ownerAddress }],
+      }),
+    ).toThrow(ArkivAttributeError);
   });
 
   it("builds owner-scoped profile queries", () => {

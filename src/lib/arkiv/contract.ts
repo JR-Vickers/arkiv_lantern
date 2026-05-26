@@ -132,6 +132,13 @@ export class ArkivProjectAttributeError extends Error {
   }
 }
 
+export class ArkivAttributeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ArkivAttributeError";
+  }
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -168,7 +175,20 @@ export function assertProjectScopedEntityDraft<TPayload extends object>(
   draft: ArkivEntityDraft<TPayload>,
 ): ArkivEntityDraft<TPayload> {
   assertValidProjectAttributes(draft.attributes);
+  assertUniqueAttributeKeys(draft.attributes);
   return draft;
+}
+
+export function assertUniqueAttributeKeys(attributes: ReadonlyArray<ArkivAttribute>): void {
+  const seenKeys = new Set<string>();
+
+  for (const attribute of attributes) {
+    if (seenKeys.has(attribute.key)) {
+      throw new ArkivAttributeError(`Duplicate Arkiv attribute key "${attribute.key}" is not accepted by Braga.`);
+    }
+
+    seenKeys.add(attribute.key);
+  }
 }
 
 const PROJECT_ATTRIBUTE_QUERY_PATTERN = new RegExp(
