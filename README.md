@@ -2,6 +2,8 @@
 
 Arkiv Lantern is a web app for wallet-owned memory on Arkiv. You create memory profiles and memory records as Arkiv entities controlled by your wallet.
 
+A Braga testnet version is fully deployed at [this url](https://jarrettvickers.com/arkiv_lantern/).
+
 ## What You Can Do
 
 - Connect MetaMask and use Arkiv Braga testnet
