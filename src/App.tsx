@@ -1519,7 +1519,8 @@ export function App({
             )}
 
             <details className="query-details advanced-details">
-              <summary>Memory record query</summary>
+              <summary>Advanced</summary>
+              <p className="query-details-label">Memory record query</p>
               <code>{recordQuery}</code>
             </details>
           </section>

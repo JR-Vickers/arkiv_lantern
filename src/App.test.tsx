@@ -908,7 +908,15 @@ describe("App memory record workflow", () => {
         tag: "Project Context",
       });
     });
-    expect(screen.getByText(/tag = "project-context"/)).toBeInTheDocument();
+    const memorySection = screen.getByRole("region", { name: "Retrieve memories" });
+    const recordQuery = screen.getByText(/tag = "project-context"/);
+    expect(within(memorySection).getByText("Advanced")).toBeVisible();
+    expect(recordQuery).not.toBeVisible();
+
+    fireEvent.click(within(memorySection).getByText("Advanced"));
+
+    expect(within(memorySection).getByText("Memory record query")).toBeVisible();
+    expect(recordQuery).toBeVisible();
   });
 
   it("renders record detail payload and metadata", async () => {

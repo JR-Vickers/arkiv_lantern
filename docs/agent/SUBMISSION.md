@@ -15,7 +15,7 @@ This file is the deterministic source for challenge-submission readiness checks.
 - Public GitHub repo: https://github.com/JR-Vickers/arkiv_lantern
 - License: MIT
 - README setup instructions complete: Yes for Phase 7 readiness
-- Local Git remote discovered: No, this workspace is not a Git repository
+- Local Git remote discovered: Yes (workspace is a Git repository with tracked changes)
 - Deployment workflow: `.github/workflows/deploy-pages.yml`
 
 ## Demo
@@ -23,9 +23,9 @@ This file is the deterministic source for challenge-submission readiness checks.
 - Working demo link: https://jr-vickers.github.io/arkiv_lantern/
 - Demo video link: Requires human before prize claim
 - Braga test wallet public address: `0x5056A091A9674EB1bDFcE49a689b175Bd69E81A2`
-- Demo shows create/query/update/delete for `memory_profile`: Requires human manual Braga verification on deployed URL
-- Demo shows create/query/update/delete for plaintext `memory_record`: Requires human manual Braga verification on deployed URL
-- Demo shows create/query/update/delete for encrypted `memory_record`: Requires human manual Braga verification on deployed URL
+- Demo shows create/query/update/delete for `memory_profile`: Automated tests and local smoke/check gates pass; deployed manual Braga verification still required
+- Demo shows create/query/update/delete for plaintext `memory_record`: Automated tests and local smoke/check gates pass; deployed manual Braga verification still required
+- Demo shows create/query/update/delete for encrypted `memory_record`: Automated tests and local smoke/check gates pass; deployed manual Braga verification still required
 - Demo shows `PROJECT_ATTRIBUTE`: Yes in app shell and query detail UI
 - Live Braga pending-transaction caveat documented: Yes
 
@@ -52,4 +52,4 @@ This file is the deterministic source for challenge-submission readiness checks.
 - Submitted by: Requires human
 - Submission date: Requires human
 - Submission URL/status: Requires human
-- Notes: Public repository and GitHub Pages demo URL are now set. Final team info, prize wallet, submission URL/status, and demo video link remain human-owned completion items.
+- Notes: As of 2026-05-26, `./scripts/check.sh` passes locally (lint, typecheck, tests, smoke, eval). `SUBMISSION_READY=true ./scripts/eval.sh` still fails until remaining human-owned fields are completed and deployed Braga flows are manually verified.
